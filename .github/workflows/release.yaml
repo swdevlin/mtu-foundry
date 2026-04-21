@@ -1,0 +1,54 @@
+name: Build Foundry Module Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Verify release tag matches module version
+        shell: bash
+        run: |
+          VERSION_IN_JSON=$(python3 - <<'PY'
+          import json
+          with open("module.json", "r", encoding="utf-8") as f:
+              print(json.load(f)["version"])
+          PY
+          )
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          echo "module.json version: $VERSION_IN_JSON"
+          echo "release tag version: $TAG_VERSION"
+
+          if [ "$VERSION_IN_JSON" != "$TAG_VERSION" ]; then
+            echo "Release tag does not match module.json version"
+            exit 1
+          fi
+
+      - name: Create release zip
+        shell: bash
+        run: |
+          mkdir -p dist
+          zip -r "dist/my-traveller-universe.zip" \
+            module.json \
+            scripts \
+            styles \
+            templates \
+            lang \
+            -x "*.DS_Store" -x "__MACOSX/*"
+
+      - name: Upload module.json to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            module.json
+            dist/my-traveller-universe.zip
