@@ -51,13 +51,95 @@ Hooks.once("init", () => {
   });
 });
 
-Hooks.on("renderJournalDirectory", (_app, html) => {
-  if (!game.user.isGM) return;
+function isV13Plus() {
+  return Number(game.release?.generation ?? 0) >= 13;
+}
+
+function openMtuImportDialog() {
+  if (checkRequiredSettings()) new MtuImportDialog().render(true);
+}
+
+function makeMtuButton() {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "mtu-import-url";
+  btn.innerHTML = `<i class="fas fa-satellite-dish"></i> ${game.i18n.localize("MTU.button.import")}`;
+  btn.addEventListener("click", openMtuImportDialog);
+  return btn;
+}
+
+function addMtuJournalButtonV13(app, html) {
+  if (!game.user?.isGM) return;
+
+  // In v13, render hooks for ApplicationV2-style UIs provide an element-like target.
+  // Prefer the html argument, then fall back to app.element.
+  const root =
+    html instanceof HTMLElement ? html :
+      app?.element instanceof HTMLElement ? app.element :
+        app?.element?.[0] instanceof HTMLElement ? app.element[0] :
+          null;
+
+  if (!root) {
+    console.warn("MTU | Could not resolve JournalDirectory root element in v13", { app, html });
+    return;
+  }
+
+  if (root.querySelector(".mtu-import-url")) return;
+
+  // Journal directory still has a top-right header area conceptually.
+  // Try a few likely containers first.
+  let target =
+    root.querySelector(".directory-header .header-actions") ||
+    root.querySelector(".directory-header .action-buttons") ||
+    root.querySelector(".directory-header");
+
+  if (!target) {
+    console.warn("MTU | Could not find journal directory header target", root);
+    return;
+  }
+
+  // If we are injecting directly into the header, create a wrapper so layout stays tidy.
+  if (target.classList.contains("directory-header")) {
+    let wrapper = target.querySelector(".mtu-header-controls");
+    if (!wrapper) {
+      wrapper = document.createElement("div");
+      wrapper.className = "mtu-header-controls";
+      target.appendChild(wrapper);
+    }
+    target = wrapper;
+  }
+
+  target.prepend(makeMtuButton());
+}
+
+function addMtuJournalButtonV12(html) {
+  if (!game.user?.isGM) return;
   if (html.find(".mtu-import-url").length) return;
 
-  const btn = $(`<button class="mtu-import-url"><i class="fas fa-satellite-dish"></i> ${game.i18n.localize("MTU.button.import")}</button>`);
-  btn.on("click", () => { if (checkRequiredSettings()) new MtuImportDialog().render(true); });
-  html.find(".directory-header .action-buttons").prepend(btn);
+  const btn = $(`
+    <button type="button" class="mtu-import-url">
+      <i class="fas fa-satellite-dish"></i> ${game.i18n.localize("MTU.button.import")}
+    </button>
+  `);
+
+  btn.on("click", openMtuImportDialog);
+
+  const $target =
+    html.find(".directory-header .action-buttons").first().length
+      ? html.find(".directory-header .action-buttons").first()
+      : html.find(".directory-header").first();
+
+  if ($target.length) {
+    $target.prepend(btn);
+  }
+}
+
+Hooks.on("renderJournalDirectory", (app, html) => {
+  if (isV13Plus()) {
+    addMtuJournalButtonV13(app, html);
+  } else {
+    addMtuJournalButtonV12(html);
+  }
 });
 
 Hooks.on("renderJournalSheet", (app, html) => {

@@ -1,3 +1,14 @@
+.mtu-header-controls {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.mtu-import-url {
+  white-space: nowrap;
+}
+
+
 /* ── Import dialog ──────────────────────────────────────────── */
 
 .mtu-import-form fieldset {
