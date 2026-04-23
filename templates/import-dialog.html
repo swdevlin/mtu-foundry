@@ -1,57 +1,57 @@
 <form class="mtu-import-form">
   <div class="form-group">
-    <label>Stellar Object URL or ID</label>
+    <label for="mtu-source-url">{{localize "MTU.importDialog.sourceUrl.label"}}</label>
     <div class="form-fields">
-      <input type="text" name="sourceUrl" placeholder="https://mytravelleruniverse.net/c/revelation/stellar_objects/7873189  or just  7873189" required />
+      <input id="mtu-source-url" type="text" name="sourceUrl" placeholder="{{localize 'MTU.importDialog.sourceUrl.placeholder'}}" required />
     </div>
-    <p class="notes">Paste a full MyTravellerUniverse stellar object URL, or just the numeric ID (uses the campaign slug from module settings).</p>
+    <p class="notes">{{localize "MTU.importDialog.sourceUrl.notes"}}</p>
   </div>
 
   <div class="form-group">
-    <label>Journal name</label>
+    <label for="mtu-journal-name">{{localize "MTU.importDialog.journalName.label"}}</label>
     <div class="form-fields">
-      <input type="text" name="name" placeholder="Leave blank to use the object name from MTU" />
+      <input id="mtu-journal-name" type="text" name="name" placeholder="{{localize 'MTU.importDialog.journalName.placeholder'}}" />
     </div>
   </div>
 
   <div class="form-group">
-    <label>Folder</label>
+    <label for="mtu-folder-name">{{localize "MTU.importDialog.folder.label"}}</label>
     <div class="form-fields">
-      <input type="text" name="folderName" value="{{defaultFolderName}}" />
+      <input id="mtu-folder-name" type="text" name="folderName" value="{{defaultFolderName}}" />
     </div>
   </div>
 
   <fieldset>
-    <legend>Pages to create</legend>
+    <legend>{{localize "MTU.importDialog.pages.legend"}}</legend>
 
     <div class="form-group stacked">
       <label class="checkbox">
         <input type="checkbox" name="createPlayerPage" checked />
-        Player Data page
+        {{localize "MTU.importDialog.pages.playerPage.label"}}
       </label>
-      <p class="notes">Planetary profile, jump shadow times, and location. Visible to all players.</p>
+      <p class="notes">{{localize "MTU.importDialog.pages.playerPage.notes"}}</p>
     </div>
 
     <div class="form-group stacked">
       <label class="checkbox">
         <input type="checkbox" name="createGmPage" checked />
-        GM Data page
+        {{localize "MTU.importDialog.pages.gmPage.label"}}
       </label>
-      <p class="notes">Full detail: orbital data, starport economics, physical, environmental, population, government, law, and tech level. GM-only.</p>
+      <p class="notes">{{localize "MTU.importDialog.pages.gmPage.notes"}}</p>
     </div>
 
     <div class="form-group stacked">
       <label class="checkbox">
         <input type="checkbox" name="createSystemMapPage" checked />
-        System Map page
+        {{localize "MTU.importDialog.pages.systemMapPage.label"}}
       </label>
-      <p class="notes">SVG map of the star system. Visible to all players.</p>
+      <p class="notes">{{localize "MTU.importDialog.pages.systemMapPage.notes"}}</p>
     </div>
   </fieldset>
 
   <footer class="sheet-footer flexrow">
     <button type="submit">
-      <i class="fas fa-book-atlas"></i> Create Journal
+      <i class="fas fa-book-atlas"></i> {{localize "MTU.importDialog.submit"}}
     </button>
   </footer>
 </form>

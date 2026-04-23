@@ -7,10 +7,22 @@ import {
   parseStellarObjectInput
 } from "./mtu-api.js";
 
+function checkRequiredSettings() {
+  const slug = game.settings.get(MODULE_ID, "campaignSlug");
+  const key  = game.settings.get(MODULE_ID, "apiKey");
+  if (slug && key) return true;
+  Dialog.prompt({
+    title:   game.i18n.localize("MTU.warn.configRequired.title"),
+    content: `<p>${game.i18n.localize("MTU.warn.configRequired.body")}</p>`,
+    label:   game.i18n.localize("MTU.warn.configRequired.ok"),
+  });
+  return false;
+}
+
 Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "apiKey", {
-    name: "MTU API key",
-    hint: "Bearer token used to authenticate requests to the MTU API. Set once by the GM; used by all players.",
+    name: "MTU.settings.apiKey.name",
+    hint: "MTU.settings.apiKey.hint",
     scope: "world",
     config: true,
     type: String,
@@ -19,8 +31,8 @@ Hooks.once("init", () => {
   });
 
   game.settings.register(MODULE_ID, "defaultFolderName", {
-    name: "Default journal folder",
-    hint: "Imported MTU journals are placed in this folder. It will be created if needed.",
+    name: "MTU.settings.defaultFolderName.name",
+    hint: "MTU.settings.defaultFolderName.hint",
     scope: "world",
     config: true,
     type: String,
@@ -29,8 +41,8 @@ Hooks.once("init", () => {
   });
 
   game.settings.register(MODULE_ID, "campaignSlug", {
-    name: "Campaign slug",
-    hint: "Used when importing by bare numeric ID. Overridden by the slug in any pasted URL.",
+    name: "MTU.settings.campaignSlug.name",
+    hint: "MTU.settings.campaignSlug.hint",
     scope: "world",
     config: true,
     type: String,
@@ -43,8 +55,8 @@ Hooks.on("renderJournalDirectory", (_app, html) => {
   if (!game.user.isGM) return;
   if (html.find(".mtu-import-url").length) return;
 
-  const btn = $(`<button class="mtu-import-url"><i class="fas fa-satellite-dish"></i> Import MTU URL</button>`);
-  btn.on("click", () => new MtuImportDialog().render(true));
+  const btn = $(`<button class="mtu-import-url"><i class="fas fa-satellite-dish"></i> ${game.i18n.localize("MTU.button.import")}</button>`);
+  btn.on("click", () => { if (checkRequiredSettings()) new MtuImportDialog().render(true); });
   html.find(".directory-header .action-buttons").prepend(btn);
 });
 
@@ -53,7 +65,7 @@ Hooks.on("renderJournalSheet", (app, html) => {
 
   new ContextMenu(html, ".pages-list .page", [
     {
-      name: "Refresh from MTU",
+      name: "MTU.menu.refreshFromMtu",
       icon: '<i class="fas fa-rotate"></i>',
       condition: (li) => {
         const page = getJournalPageFromLi(app, li);
@@ -65,7 +77,7 @@ Hooks.on("renderJournalSheet", (app, html) => {
       },
     },
     {
-      name: "Edit MTU ID",
+      name: "MTU.menu.editMtuId",
       icon: '<i class="fas fa-pen"></i>',
       condition: (li) => {
         const page = getJournalPageFromLi(app, li);
@@ -86,7 +98,7 @@ Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
 
   options.push(
     {
-      name: "Refresh from MTU",
+      name: "MTU.menu.refreshFromMtu",
       icon: '<i class="fas fa-rotate"></i>',
       condition: (li) => {
         const entry = getJournalEntryFromLi(li);
@@ -98,7 +110,7 @@ Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
       },
     },
     {
-      name: "Edit MTU ID",
+      name: "MTU.menu.editMtuId",
       icon: '<i class="fas fa-pen"></i>',
       condition: (li) => {
         const entry = getJournalEntryFromLi(li);
@@ -110,10 +122,10 @@ Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
       },
     },
     {
-      name: "Open MTU importer",
+      name: "MTU.menu.openImporter",
       icon: '<i class="fas fa-satellite-dish"></i>',
       condition: () => true,
-      callback: () => new MtuImportDialog().render(true),
+      callback: () => { if (checkRequiredSettings()) new MtuImportDialog().render(true); },
     }
   );
 });
@@ -168,11 +180,7 @@ function findMtuTextPage(entry, mode) {
 
 function findSystemMapPage(entry) {
   return entry.pages.find((page) =>
-    page.type === "image" &&
-    (
-      page.name === "System Map" ||
-      /system map/i.test(page.name ?? "")
-    )
+    page.type === "image" && !!page.getFlag(MODULE_ID, "systemMap")
   ) ?? null;
 }
 
@@ -187,7 +195,7 @@ async function refreshMtuPage(page, app) {
   const mode = page.getFlag(MODULE_ID, "mode");
 
   if (!campaignSlug || !resourceId || !mode) {
-    ui.notifications.error("This page is missing MTU metadata.");
+    ui.notifications.error(game.i18n.localize("MTU.notify.pageMissingMetadata"));
     return;
   }
 
@@ -201,10 +209,10 @@ async function refreshMtuPage(page, app) {
     });
 
     app?.render(true);
-    ui.notifications.info("MTU page refreshed.");
+    ui.notifications.info(game.i18n.localize("MTU.notify.pageRefreshed"));
   } catch (err) {
     console.error(err);
-    ui.notifications.error(`MTU refresh failed: ${err.message}`);
+    ui.notifications.error(game.i18n.format("MTU.notify.refreshFailed", { message: err.message }));
   }
 }
 
@@ -213,7 +221,7 @@ async function refreshMtuJournalEntry(entry) {
   const resourceId = getEntryResourceId(entry);
 
   if (!campaignSlug || !resourceId) {
-    ui.notifications.error("This journal entry is missing MTU metadata.");
+    ui.notifications.error(game.i18n.localize("MTU.notify.entryMissingMetadata"));
     return;
   }
 
@@ -226,30 +234,31 @@ async function refreshMtuJournalEntry(entry) {
     });
 
     entry.sheet?.render(true);
-    ui.notifications.info(`MTU journal "${entry.name}" refreshed.`);
+    ui.notifications.info(game.i18n.format("MTU.notify.entryRefreshed", { name: entry.name }));
   } catch (err) {
     console.error(err);
-    ui.notifications.error(`MTU refresh failed: ${err.message}`);
+    ui.notifications.error(game.i18n.format("MTU.notify.refreshFailed", { message: err.message }));
   }
 }
 
 async function editMtuJournalEntryId(entry) {
+  if (!checkRequiredSettings()) return;
   const current = getEntryResourceId(entry);
 
   new Dialog({
-    title: "Edit Stellar Object ID",
+    title: game.i18n.localize("MTU.dialog.editId.title"),
     content: `
       <div class="form-group">
-        <label>Stellar Object ID</label>
+        <label>${game.i18n.localize("MTU.dialog.editId.label")}</label>
         <div class="form-fields">
           <input type="text" id="mtu-new-id" value="${current}" style="width:100%" />
         </div>
-        <p class="notes">Enter a numeric ID or a full stellar object URL. GM, Player, and System Map pages will be updated to use the new resource.</p>
+        <p class="notes">${game.i18n.localize("MTU.dialog.editId.notes")}</p>
       </div>`,
     buttons: {
       save: {
         icon: '<i class="fas fa-save"></i>',
-        label: "Save & Refresh",
+        label: game.i18n.localize("MTU.dialog.editId.save"),
         callback: async (html) => {
           const raw = String(html.find("#mtu-new-id").val() ?? "").trim();
           if (!raw) return;
@@ -281,16 +290,16 @@ async function editMtuJournalEntryId(entry) {
             });
 
             entry.sheet?.render(true);
-            ui.notifications.info(`MTU journal "${entry.name}" updated.`);
+            ui.notifications.info(game.i18n.format("MTU.notify.entryUpdated", { name: entry.name }));
           } catch (err) {
             console.error(err);
-            ui.notifications.error(`MTU update failed: ${err.message}`);
+            ui.notifications.error(game.i18n.format("MTU.notify.updateFailed", { message: err.message }));
           }
         },
       },
       cancel: {
         icon: '<i class="fas fa-times"></i>',
-        label: "Cancel",
+        label: game.i18n.localize("MTU.dialog.editId.cancel"),
       },
     },
     default: "save",

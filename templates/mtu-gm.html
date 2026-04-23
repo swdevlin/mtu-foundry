@@ -1,14 +1,14 @@
 <div class="mtu-page">
   <h1 class="mtu-title">{{name}}</h1>
   <p class="mtu-subtitle">{{type}}</p>
-  <p class="mtu-uwp"><strong>UWP:</strong> <code>{{profile.[0].value}}</code></p>
+  <p class="mtu-uwp"><strong>{{localize "MTU.label.uwp"}}:</strong> <code>{{profile.[0].value}}</code></p>
 
-  <h2>Planetary Profile</h2>
+  <h2>{{localize "MTU.section.planetaryProfile"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each profile}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
@@ -16,7 +16,7 @@
   </table>
 
   {{#if jumpShadow}}
-  <h2>Jump Shadow Times</h2>
+  <h2>{{localize "MTU.section.jumpShadowTimes"}}</h2>
   <table class="mtu-table mtu-table--horizontal">
     <thead>
       <tr>
@@ -35,22 +35,22 @@
   </table>
   {{/if}}
 
-  <h2>Location</h2>
+  <h2>{{localize "MTU.section.location"}}</h2>
   <table class="mtu-table">
     <tbody>
-      <tr><th>Orbiting</th>     <td>{{location.orbiting}}</td></tr>
-      <tr><th>Star System</th>  <td>{{location.starSystem}}</td></tr>
-      <tr><th>Subsector</th>    <td>{{location.subsector}}</td></tr>
-      <tr><th>Sector</th>       <td>{{location.sector}}</td></tr>
+      <tr><th>{{localize "MTU.location.orbiting"}}</th>   <td>{{location.orbiting}}</td></tr>
+      <tr><th>{{localize "MTU.location.starSystem"}}</th>  <td>{{location.starSystem}}</td></tr>
+      <tr><th>{{localize "MTU.location.subsector"}}</th>   <td>{{location.subsector}}</td></tr>
+      <tr><th>{{localize "MTU.location.sector"}}</th>      <td>{{location.sector}}</td></tr>
     </tbody>
   </table>
 
-  <h2>Orbital Data</h2>
+  <h2>{{localize "MTU.section.orbitalData"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each orbital}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
@@ -58,9 +58,9 @@
   </table>
 
   {{#if jumpShadowDetail}}
-  <h2>Jump Shadow</h2>
-  <p><strong>Distance to Clear:</strong> {{jumpShadowDetail.distanceKm}} km</p>
-  <p><strong>Shadow Source:</strong> {{jumpShadowDetail.sourceName}}</p>
+  <h2>{{localize "MTU.section.jumpShadow"}}</h2>
+  <p><strong>{{localize "MTU.jumpShadow.distanceToClear"}}</strong> {{jumpShadowDetail.distanceKm}} km</p>
+  <p><strong>{{localize "MTU.jumpShadow.shadowSource"}}</strong> {{jumpShadowDetail.sourceName}}</p>
   {{#if jumpShadowDetail.times}}
   <table class="mtu-table mtu-table--horizontal">
     <thead>
@@ -81,108 +81,108 @@
   {{/if}}
   {{/if}}
 
-  <h2>Starport</h2>
+  <h2>{{localize "MTU.section.starport"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each starport}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Physical Data</h2>
+  <h2>{{localize "MTU.section.physicalData"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each physical}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Environmental Data</h2>
+  <h2>{{localize "MTU.section.environmentalData"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each environmental}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Atmosphere</h2>
+  <h2>{{localize "MTU.section.atmosphere"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each atmosphere}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Hydrographics</h2>
+  <h2>{{localize "MTU.section.hydrographics"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each hydrographics}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Population</h2>
+  <h2>{{localize "MTU.section.population"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each population}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Government</h2>
+  <h2>{{localize "MTU.section.government"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each government}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Law Level</h2>
+  <h2>{{localize "MTU.section.lawLevel"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each lawLevel}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
 
-  <h2>Tech Level</h2>
+  <h2>{{localize "MTU.section.techLevel"}}</h2>
   <table class="mtu-table">
     <tbody>
       {{#each techLevel}}
       <tr>
-        <th>{{this.label}}</th>
+        <th>{{localize this.label}}</th>
         <td>{{this.value}}</td>
       </tr>
       {{/each}}

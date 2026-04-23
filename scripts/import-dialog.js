@@ -10,13 +10,16 @@ export class MtuImportDialog extends FormApplication {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       id: "mtu-import-dialog",
-      title: "Import MTU Stellar Object",
       template: `modules/${MODULE_ID}/templates/import-dialog.html`,
       width: 520,
       closeOnSubmit: true,
       submitOnChange: false,
       submitOnClose: false,
     });
+  }
+
+  get title() {
+    return game.i18n.localize("MTU.importDialog.title");
   }
 
   getData() {
@@ -30,7 +33,7 @@ export class MtuImportDialog extends FormApplication {
 
   async _updateObject(_event, formData) {
     if (!game.user.isGM) {
-      ui.notifications.error("Only a GM can import MTU journals.");
+      ui.notifications.error(game.i18n.localize("MTU.notify.gmOnly"));
       return;
     }
 
@@ -49,11 +52,13 @@ export class MtuImportDialog extends FormApplication {
     try {
       payload = await fetchStellarObject(parsed.campaignSlug, parsed.resourceId);
     } catch (err) {
-      ui.notifications.error(`Could not fetch MTU data: ${err.message}`);
+      ui.notifications.error(game.i18n.format("MTU.notify.fetchFailed", { message: err.message }));
       return;
     }
 
-    const entryName = data.name?.trim() || payload.name || `Stellar Object ${parsed.resourceId}`;
+    const sectorHex = [payload.sector_name, payload.hex].filter(Boolean).join(" ");
+    const entryName = data.name?.trim() || payload.name || sectorHex
+      || game.i18n.format("MTU.page.defaultName", { id: parsed.resourceId });
     const folder = await this._resolveFolder(data.folderName?.trim());
 
     const entry = await JournalEntry.create({
@@ -77,7 +82,7 @@ export class MtuImportDialog extends FormApplication {
         buildPlayerData(payload)
       );
       pages.push({
-        name: "Player Data",
+        name: game.i18n.localize("MTU.page.playerData"),
         type: "text",
         text: { content: playerHtml, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
@@ -93,7 +98,7 @@ export class MtuImportDialog extends FormApplication {
         buildGmData(payload)
       );
       pages.push({
-        name: "GM Data",
+        name: game.i18n.localize("MTU.page.gmData"),
         type: "text",
         text: { content: gmHtml, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
@@ -105,10 +110,13 @@ export class MtuImportDialog extends FormApplication {
 
     if (data.createSystemMapPage && payload.star_system_map_url) {
       pages.push({
-        name: "System Map",
+        name: game.i18n.localize("MTU.page.systemMap"),
         type: "image",
         src: payload.star_system_map_url,
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+        flags: {
+          [MODULE_ID]: { systemMap: true },
+        },
       });
     }
 
@@ -116,7 +124,7 @@ export class MtuImportDialog extends FormApplication {
       await entry.createEmbeddedDocuments("JournalEntryPage", pages);
     }
 
-    ui.notifications.info(`Created MTU journal "${entry.name}".`);
+    ui.notifications.info(game.i18n.format("MTU.notify.entryCreated", { name: entry.name }));
     entry.sheet.render(true);
   }
 
