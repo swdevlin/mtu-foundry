@@ -7,17 +7,31 @@ import {
   parseStellarObjectInput
 } from "./mtu-api.js";
 
+function isV13Plus() {
+  return Number(game.release?.generation ?? 0) >= 13;
+}
+
 function checkRequiredSettings() {
   const slug = game.settings.get(MODULE_ID, "campaignSlug");
-  const key  = game.settings.get(MODULE_ID, "apiKey");
+  const key = game.settings.get(MODULE_ID, "apiKey");
   if (slug && key) return true;
+
   Dialog.prompt({
-    title:   game.i18n.localize("MTU.warn.configRequired.title"),
+    title: game.i18n.localize("MTU.warn.configRequired.title"),
     content: `<p>${game.i18n.localize("MTU.warn.configRequired.body")}</p>`,
-    label:   game.i18n.localize("MTU.warn.configRequired.ok"),
+    label: game.i18n.localize("MTU.warn.configRequired.ok")
   });
+
   return false;
 }
+
+function openMtuImportDialog() {
+  if (checkRequiredSettings()) new MtuImportDialog().render(true);
+}
+
+/* -------------------------------- */
+/* Init                             */
+/* -------------------------------- */
 
 Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "apiKey", {
@@ -27,7 +41,7 @@ Hooks.once("init", () => {
     config: true,
     type: String,
     default: "",
-    restricted: true,
+    restricted: true
   });
 
   game.settings.register(MODULE_ID, "defaultFolderName", {
@@ -37,7 +51,7 @@ Hooks.once("init", () => {
     config: true,
     type: String,
     default: "MTU Imports",
-    restricted: true,
+    restricted: true
   });
 
   game.settings.register(MODULE_ID, "campaignSlug", {
@@ -47,17 +61,17 @@ Hooks.once("init", () => {
     config: true,
     type: String,
     default: "",
-    restricted: true,
+    restricted: true
   });
+
+  if (isV13Plus()) {
+    patchV13JournalDirectoryContext();
+  }
 });
 
-function isV13Plus() {
-  return Number(game.release?.generation ?? 0) >= 13;
-}
-
-function openMtuImportDialog() {
-  if (checkRequiredSettings()) new MtuImportDialog().render(true);
-}
+/* -------------------------------- */
+/* Journal directory button         */
+/* -------------------------------- */
 
 function makeMtuButton() {
   const btn = document.createElement("button");
@@ -71,8 +85,6 @@ function makeMtuButton() {
 function addMtuJournalButtonV13(app, html) {
   if (!game.user?.isGM) return;
 
-  // In v13, render hooks for ApplicationV2-style UIs provide an element-like target.
-  // Prefer the html argument, then fall back to app.element.
   const root =
     html instanceof HTMLElement ? html :
       app?.element instanceof HTMLElement ? app.element :
@@ -86,8 +98,6 @@ function addMtuJournalButtonV13(app, html) {
 
   if (root.querySelector(".mtu-import-url")) return;
 
-  // Journal directory still has a top-right header area conceptually.
-  // Try a few likely containers first.
   let target =
     root.querySelector(".directory-header .header-actions") ||
     root.querySelector(".directory-header .action-buttons") ||
@@ -98,7 +108,6 @@ function addMtuJournalButtonV13(app, html) {
     return;
   }
 
-  // If we are injecting directly into the header, create a wrapper so layout stays tidy.
   if (target.classList.contains("directory-header")) {
     let wrapper = target.querySelector(".mtu-header-controls");
     if (!wrapper) {
@@ -142,95 +151,57 @@ Hooks.on("renderJournalDirectory", (app, html) => {
   }
 });
 
-Hooks.on("renderJournalSheet", (app, html) => {
-  if (!game.user.isGM) return;
+/* -------------------------------- */
+/* Shared helpers                   */
+/* -------------------------------- */
 
-  new ContextMenu(html, ".pages-list .page", [
-    {
-      name: "MTU.menu.refreshFromMtu",
-      icon: '<i class="fas fa-rotate"></i>',
-      condition: (li) => {
-        const page = getJournalPageFromLi(app, li);
-        return !!page?.getFlag(MODULE_ID, "live");
-      },
-      callback: async (li) => {
-        const page = getJournalPageFromLi(app, li);
-        if (page) await refreshMtuPage(page, app);
-      },
-    },
-    {
-      name: "MTU.menu.editMtuId",
-      icon: '<i class="fas fa-pen"></i>',
-      condition: (li) => {
-        const page = getJournalPageFromLi(app, li);
-        return !!page?.getFlag(MODULE_ID, "live");
-      },
-      callback: async (li) => {
-        const page = getJournalPageFromLi(app, li);
-        if (page) {
-          await editMtuJournalEntryId(app.object);
-        }
-      },
-    },
-  ]);
-});
-
-Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
-  if (!game.user.isGM) return;
-
-  options.push(
-    {
-      name: "MTU.menu.refreshFromMtu",
-      icon: '<i class="fas fa-rotate"></i>',
-      condition: (li) => {
-        const entry = getJournalEntryFromLi(li);
-        return isMtuJournal(entry);
-      },
-      callback: async (li) => {
-        const entry = getJournalEntryFromLi(li);
-        if (entry) await refreshMtuJournalEntry(entry);
-      },
-    },
-    {
-      name: "MTU.menu.editMtuId",
-      icon: '<i class="fas fa-pen"></i>',
-      condition: (li) => {
-        const entry = getJournalEntryFromLi(li);
-        return isMtuJournal(entry);
-      },
-      callback: async (li) => {
-        const entry = getJournalEntryFromLi(li);
-        if (entry) await editMtuJournalEntryId(entry);
-      },
-    },
-    {
-      name: "MTU.menu.openImporter",
-      icon: '<i class="fas fa-satellite-dish"></i>',
-      condition: () => true,
-      callback: () => { if (checkRequiredSettings()) new MtuImportDialog().render(true); },
-    }
-  );
-});
+function getElementFromMaybeJquery(value) {
+  if (value instanceof HTMLElement) return value;
+  if (value?.[0] instanceof HTMLElement) return value[0];
+  return null;
+}
 
 function getJournalEntryFromLi(li) {
   const entryId =
-    li.data?.("documentId") ??
-    li.data?.("entityId") ??
-    li.data?.("entryId") ??
-    li.attr?.("data-document-id") ??
-    li.attr?.("data-entity-id") ??
-    li.attr?.("data-entry-id");
+    li?.data?.("documentId") ??
+    li?.data?.("entityId") ??
+    li?.data?.("entryId") ??
+    li?.attr?.("data-document-id") ??
+    li?.attr?.("data-entity-id") ??
+    li?.attr?.("data-entry-id");
 
-  return entryId ? game.journal.get(entryId) : null;
+  if (entryId) return game.journal.get(entryId);
+
+  const el = getElementFromMaybeJquery(li);
+  if (!el) return null;
+
+  const domEntryId =
+    el.dataset?.documentId ||
+    el.dataset?.entityId ||
+    el.dataset?.entryId ||
+    el.getAttribute("data-document-id") ||
+    el.getAttribute("data-entity-id") ||
+    el.getAttribute("data-entry-id");
+
+  return domEntryId ? game.journal.get(domEntryId) : null;
 }
 
 function getJournalPageFromLi(app, li) {
   const pageId =
-    li.data?.("pageId") ??
-    li.data?.("page-id") ??
-    li.attr?.("data-page-id");
+    li?.data?.("pageId") ??
+    li?.data?.("page-id") ??
+    li?.attr?.("data-page-id");
 
-  return pageId ? app.object.pages.get(pageId) : null;
+  if (pageId) return app.object.pages.get(pageId);
+
+  const el = getElementFromMaybeJquery(li);
+  if (!el) return null;
+
+  const domPageId =
+    el.dataset?.pageId ||
+    el.getAttribute("data-page-id");
+
+  return domPageId ? app.object.pages.get(domPageId) : null;
 }
 
 function isMtuJournal(entry) {
@@ -266,6 +237,202 @@ function findSystemMapPage(entry) {
   ) ?? null;
 }
 
+/* -------------------------------- */
+/* Journal sheet page context menu  */
+/* -------------------------------- */
+
+function getV12JournalSheetPageContextOptions(app) {
+  return [
+    {
+      name: "MTU.menu.refreshFromMtu",
+      icon: '<i class="fas fa-rotate"></i>',
+      condition: (li) => {
+        const page = getJournalPageFromLi(app, li);
+        return !!page?.getFlag(MODULE_ID, "live");
+      },
+      callback: async (li) => {
+        const page = getJournalPageFromLi(app, li);
+        if (page) await refreshMtuPage(page, app);
+      }
+    },
+    {
+      name: "MTU.menu.editMtuId",
+      icon: '<i class="fas fa-pen"></i>',
+      condition: (li) => {
+        const page = getJournalPageFromLi(app, li);
+        return !!page?.getFlag(MODULE_ID, "live");
+      },
+      callback: async () => {
+        if (app.object) await editMtuJournalEntryId(app.object);
+      }
+    }
+  ];
+}
+
+function getV13JournalSheetPageContextOptions(app) {
+  return [
+    {
+      name: "MTU.menu.refreshFromMtu",
+      icon: '<i class="fas fa-rotate"></i>',
+      condition: (li) => {
+        const page = getJournalPageFromLi(app, li);
+        return !!page?.getFlag(MODULE_ID, "live");
+      },
+      callback: async (li) => {
+        const page = getJournalPageFromLi(app, li);
+        if (page) await refreshMtuPage(page, app);
+      }
+    },
+    {
+      name: "MTU.menu.editMtuId",
+      icon: '<i class="fas fa-pen"></i>',
+      condition: (li) => {
+        const page = getJournalPageFromLi(app, li);
+        return !!page?.getFlag(MODULE_ID, "live");
+      },
+      callback: async () => {
+        if (app.object) await editMtuJournalEntryId(app.object);
+      }
+    }
+  ];
+}
+
+Hooks.on("renderJournalSheet", (app, html) => {
+  if (!game.user?.isGM) return;
+
+  if (!isV13Plus()) {
+    new ContextMenu(html, ".pages-list .page", getV12JournalSheetPageContextOptions(app));
+    return;
+  }
+
+  const root =
+    html instanceof HTMLElement ? html :
+      app?.element instanceof HTMLElement ? app.element :
+        app?.element?.[0] instanceof HTMLElement ? app.element[0] :
+          null;
+
+  if (!root) {
+    console.warn("MTU | Could not resolve JournalSheet root element in v13", { app, html });
+    return;
+  }
+
+  new ContextMenu(root, ".pages-list .page", getV13JournalSheetPageContextOptions(app));
+});
+
+/* -------------------------------- */
+/* Journal directory context menu   */
+/* -------------------------------- */
+
+function getV13JournalDirectoryContextOptions() {
+  return [
+    {
+      name: "MTU.menu.refreshFromMtu",
+      icon: '<i class="fas fa-rotate"></i>',
+      condition: (li) => {
+        const entry = getJournalEntryFromLi(li);
+        return isMtuJournal(entry);
+      },
+      callback: async (li) => {
+        const entry = getJournalEntryFromLi(li);
+        if (entry) await refreshMtuJournalEntry(entry);
+      }
+    },
+    {
+      name: "MTU.menu.editMtuId",
+      icon: '<i class="fas fa-pen"></i>',
+      condition: (li) => {
+        const entry = getJournalEntryFromLi(li);
+        return isMtuJournal(entry);
+      },
+      callback: async (li) => {
+        const entry = getJournalEntryFromLi(li);
+        if (entry) await editMtuJournalEntryId(entry);
+      }
+    },
+    {
+      name: "MTU.menu.openImporter",
+      icon: '<i class="fas fa-satellite-dish"></i>',
+      condition: () => true,
+      callback: async () => {
+        openMtuImportDialog();
+      }
+    }
+  ];
+}
+
+function patchV13JournalDirectoryContext() {
+  const JournalDirectoryClass = foundry?.applications?.sidebar?.tabs?.JournalDirectory;
+  if (!JournalDirectoryClass) {
+    console.warn("MTU | Could not find JournalDirectory class for v13 context patch");
+    return;
+  }
+
+  if (JournalDirectoryClass.prototype._mtuPatchedEntryContextOptions) return;
+
+  const original = JournalDirectoryClass.prototype._getEntryContextOptions;
+  if (typeof original !== "function") {
+    console.warn("MTU | JournalDirectory._getEntryContextOptions is not available");
+    return;
+  }
+
+  JournalDirectoryClass.prototype._getEntryContextOptions = function (...args) {
+    const options = original.call(this, ...args) ?? [];
+
+    if (!game.user?.isGM) return options;
+    if (options.some((o) => o?.name === "MTU.menu.refreshFromMtu")) return options;
+
+    options.push(...getV13JournalDirectoryContextOptions());
+    return options;
+  };
+
+  JournalDirectoryClass.prototype._mtuPatchedEntryContextOptions = true;
+}
+
+// v12 only
+Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
+  if (isV13Plus()) return;
+  if (!game.user?.isGM) return;
+
+  options.push(
+    {
+      name: "MTU.menu.refreshFromMtu",
+      icon: '<i class="fas fa-rotate"></i>',
+      condition: (li) => {
+        const entry = getJournalEntryFromLi(li);
+        return isMtuJournal(entry);
+      },
+      callback: async (li) => {
+        const entry = getJournalEntryFromLi(li);
+        if (entry) await refreshMtuJournalEntry(entry);
+      }
+    },
+    {
+      name: "MTU.menu.editMtuId",
+      icon: '<i class="fas fa-pen"></i>',
+      condition: (li) => {
+        const entry = getJournalEntryFromLi(li);
+        return isMtuJournal(entry);
+      },
+      callback: async (li) => {
+        const entry = getJournalEntryFromLi(li);
+        if (entry) await editMtuJournalEntryId(entry);
+      }
+    },
+    {
+      name: "MTU.menu.openImporter",
+      icon: '<i class="fas fa-satellite-dish"></i>',
+      condition: () => true,
+      callback: async () => {
+        openMtuImportDialog();
+      }
+    }
+  );
+});
+
+/* -------------------------------- */
+/* Rendering and refresh logic      */
+/* -------------------------------- */
+
 async function renderMtuContent(mode, payload) {
   const data = mode === "gm" ? buildGmData(payload) : buildPlayerData(payload);
   return renderTemplate(`modules/${MODULE_ID}/templates/mtu-${mode}.html`, data);
@@ -287,7 +454,7 @@ async function refreshMtuPage(page, app) {
 
     await page.update({
       "text.content": content,
-      "text.format": CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML,
+      "text.format": CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
     });
 
     app?.render(true);
@@ -312,7 +479,7 @@ async function refreshMtuJournalEntry(entry) {
     await updateMtuJournalPages(entry, payload, {
       campaignSlug,
       resourceId,
-      updateSystemMap: false,
+      updateSystemMap: false
     });
 
     entry.sheet?.render(true);
@@ -368,7 +535,7 @@ async function editMtuJournalEntryId(entry) {
             await updateMtuJournalPages(entry, payload, {
               campaignSlug: newCampaignSlug,
               resourceId: newResourceId,
-              updateSystemMap: true,
+              updateSystemMap: true
             });
 
             entry.sheet?.render(true);
@@ -377,14 +544,14 @@ async function editMtuJournalEntryId(entry) {
             console.error(err);
             ui.notifications.error(game.i18n.format("MTU.notify.updateFailed", { message: err.message }));
           }
-        },
+        }
       },
       cancel: {
         icon: '<i class="fas fa-times"></i>',
-        label: game.i18n.localize("MTU.dialog.editId.cancel"),
-      },
+        label: game.i18n.localize("MTU.dialog.editId.cancel")
+      }
     },
-    default: "save",
+    default: "save"
   }).render(true);
 }
 
@@ -398,7 +565,7 @@ async function updateMtuJournalPages(entry, payload, { campaignSlug, resourceId,
       _id: playerPage.id,
       text: {
         content: playerHtml,
-        format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML,
+        format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
       },
       flags: {
         [MODULE_ID]: {
@@ -406,9 +573,9 @@ async function updateMtuJournalPages(entry, payload, { campaignSlug, resourceId,
           live: true,
           mode: "player",
           resourceId,
-          campaignSlug,
-        },
-      },
+          campaignSlug
+        }
+      }
     });
   }
 
@@ -419,7 +586,7 @@ async function updateMtuJournalPages(entry, payload, { campaignSlug, resourceId,
       _id: gmPage.id,
       text: {
         content: gmHtml,
-        format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML,
+        format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
       },
       flags: {
         [MODULE_ID]: {
@@ -427,9 +594,9 @@ async function updateMtuJournalPages(entry, payload, { campaignSlug, resourceId,
           live: true,
           mode: "gm",
           resourceId,
-          campaignSlug,
-        },
-      },
+          campaignSlug
+        }
+      }
     });
   }
 
@@ -438,7 +605,7 @@ async function updateMtuJournalPages(entry, payload, { campaignSlug, resourceId,
     if (systemMapPage && payload.star_system_map_url) {
       updates.push({
         _id: systemMapPage.id,
-        src: payload.star_system_map_url,
+        src: payload.star_system_map_url
       });
     }
   }
