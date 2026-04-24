@@ -81,8 +81,9 @@ export class MtuImportDialog extends FormApplication {
         `modules/${MODULE_ID}/templates/mtu-player.html`,
         buildPlayerData(payload)
       );
+
       pages.push({
-        name: game.i18n.localize("MTU.page.playerData"),
+        name: this.pageName("MTU.page.playerData", payload),
         type: "text",
         text: { content: playerHtml, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
@@ -98,7 +99,7 @@ export class MtuImportDialog extends FormApplication {
         buildGmData(payload)
       );
       pages.push({
-        name: game.i18n.localize("MTU.page.gmData"),
+        name: this.pageName("MTU.page.gmData", payload),
         type: "text",
         text: { content: gmHtml, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
@@ -126,6 +127,10 @@ export class MtuImportDialog extends FormApplication {
 
     ui.notifications.info(game.i18n.format("MTU.notify.entryCreated", { name: entry.name }));
     entry.sheet.render(true);
+  }
+
+  pageName(template, payload) {
+    return game.i18n.format(template, {type: game.i18n.localize("MTU.stellarBodyType." + payload.type)});
   }
 
   async _resolveFolder(folderName) {

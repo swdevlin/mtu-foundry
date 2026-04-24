@@ -67,23 +67,23 @@
       "pages": {
         "legend": "Pages to create",
         "playerPage": {
-          "label": "Player Data page",
+          "label": "Player page",
           "notes": "Planetary profile, jump shadow times, and location. Visible to all players."
         },
         "gmPage": {
-          "label": "GM Data page",
+          "label": "GM page",
           "notes": "Full detail: orbital data, starport economics, physical, environmental, population, government, law, and tech level. GM-only."
         },
         "systemMapPage": {
-          "label": "System Map page",
+          "label": "System Map",
           "notes": "SVG map of the star system. Visible to all players."
         }
       },
       "submit": "Create Journal"
     },
     "page": {
-      "playerData": "Player Data",
-      "gmData": "GM Data",
+      "playerData": "{type} data",
+      "gmData": "GM {type} data",
       "systemMap": "System Map",
       "defaultName": "Stellar Object {id}"
     },
@@ -91,6 +91,11 @@
       "needCampaignSlug": "Enter a full URL or set the campaign slug in module settings.",
       "invalidUrl": "URL does not look like a stellar object URL.",
       "fetchHttpError": "HTTP {status} fetching stellar object {id}"
+    },
+    "stellarBodyType": {
+      "TerrestrialPlanet": "Planet",
+      "PlanetoidBelt": "Belt",
+      "GasGiant": "Gas Giant"
     },
     "section": {
       "planetaryProfile": "Planetary Profile",
