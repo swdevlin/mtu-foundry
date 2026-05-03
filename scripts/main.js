@@ -9,7 +9,6 @@ import {
   fetchStarSystem,
   findMainWorld,
   normalizeBodyPayload,
-  parseStarSystemInput,
 } from "./mtu-api.js";
 
 function isV13Plus() {
@@ -270,17 +269,6 @@ function getV12JournalSheetPageContextOptions(app) {
         if (page) await refreshMtuPage(page, app);
       }
     },
-    {
-      name: "MTU.menu.editMtuId",
-      icon: '<i class="fas fa-pen"></i>',
-      condition: (li) => {
-        const page = getJournalPageFromLi(app, li);
-        return !!page?.getFlag(MODULE_ID, "live");
-      },
-      callback: async () => {
-        if (app.object) await editMtuJournalEntryId(app.object);
-      }
-    }
   ];
 }
 
@@ -296,17 +284,6 @@ function getV13JournalSheetPageContextOptions(app) {
       callback: async (li) => {
         const page = getJournalPageFromLi(app, li);
         if (page) await refreshMtuPage(page, app);
-      }
-    },
-    {
-      name: "MTU.menu.editMtuId",
-      icon: '<i class="fas fa-pen"></i>',
-      condition: (li) => {
-        const page = getJournalPageFromLi(app, li);
-        return !!page?.getFlag(MODULE_ID, "live");
-      },
-      callback: async () => {
-        if (app.object) await editMtuJournalEntryId(app.object);
       }
     }
   ];
@@ -350,18 +327,6 @@ function getV13JournalDirectoryContextOptions() {
       callback: async (li) => {
         const entry = getJournalEntryFromLi(li);
         if (entry) await refreshMtuJournalEntry(entry);
-      }
-    },
-    {
-      name: "MTU.menu.editMtuId",
-      icon: '<i class="fas fa-pen"></i>',
-      condition: (li) => {
-        const entry = getJournalEntryFromLi(li);
-        return isMtuJournal(entry);
-      },
-      callback: async (li) => {
-        const entry = getJournalEntryFromLi(li);
-        if (entry) await editMtuJournalEntryId(entry);
       }
     },
     {
@@ -419,18 +384,6 @@ Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
       callback: async (li) => {
         const entry = getJournalEntryFromLi(li);
         if (entry) await refreshMtuJournalEntry(entry);
-      }
-    },
-    {
-      name: "MTU.menu.editMtuId",
-      icon: '<i class="fas fa-pen"></i>',
-      condition: (li) => {
-        const entry = getJournalEntryFromLi(li);
-        return isMtuJournal(entry);
-      },
-      callback: async (li) => {
-        const entry = getJournalEntryFromLi(li);
-        if (entry) await editMtuJournalEntryId(entry);
       }
     },
     {
@@ -522,71 +475,6 @@ async function refreshMtuJournalEntry(entry) {
     console.error(err);
     ui.notifications.error(game.i18n.format("MTU.notify.refreshFailed", { message: err.message }));
   }
-}
-
-async function editMtuJournalEntryId(entry) {
-  if (!checkRequiredSettings()) return;
-  const current = getEntryResourceId(entry);
-
-  new Dialog({
-    title: game.i18n.localize("MTU.dialog.editId.title"),
-    content: `
-      <div class="form-group">
-        <label>${game.i18n.localize("MTU.dialog.editId.label")}</label>
-        <div class="form-fields">
-          <input type="text" id="mtu-new-id" value="${current}" style="width:100%" />
-        </div>
-        <p class="notes">${game.i18n.localize("MTU.dialog.editId.notes")}</p>
-      </div>`,
-    buttons: {
-      save: {
-        icon: '<i class="fas fa-save"></i>',
-        label: game.i18n.localize("MTU.dialog.editId.save"),
-        callback: async (html) => {
-          const raw = String(html.find("#mtu-new-id").val() ?? "").trim();
-          if (!raw) return;
-
-          let newResourceId = raw;
-          let newCampaignSlug = getEntryCampaignSlug(entry);
-
-          if (!/^\d+$/.test(raw)) {
-            try {
-              const parsed = parseStarSystemInput(raw, newCampaignSlug);
-              newResourceId = parsed.resourceId;
-              newCampaignSlug = parsed.campaignSlug;
-            } catch (err) {
-              ui.notifications.error(err.message);
-              return;
-            }
-          }
-
-          try {
-            const system = await fetchStarSystem(newCampaignSlug, newResourceId);
-
-            await entry.setFlag(MODULE_ID, "resourceId", newResourceId);
-            await entry.setFlag(MODULE_ID, "campaignSlug", newCampaignSlug);
-
-            await updateMtuJournalPages(entry, system, {
-              campaignSlug: newCampaignSlug,
-              resourceId:   newResourceId,
-              updateSystemMap: true
-            });
-
-            entry.sheet?.render(true);
-            ui.notifications.info(game.i18n.format("MTU.notify.entryUpdated", { name: entry.name }));
-          } catch (err) {
-            console.error(err);
-            ui.notifications.error(game.i18n.format("MTU.notify.updateFailed", { message: err.message }));
-          }
-        }
-      },
-      cancel: {
-        icon: '<i class="fas fa-times"></i>',
-        label: game.i18n.localize("MTU.dialog.editId.cancel")
-      }
-    },
-    default: "save"
-  }).render(true);
 }
 
 async function updateMtuJournalPages(entry, system, { campaignSlug, resourceId, updateSystemMap }) {

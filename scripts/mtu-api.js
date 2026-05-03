@@ -163,8 +163,7 @@ export function normalizeBodyPayload(body, systemContext) {
     period:                   body.period ?? null,
     effective_hzco_deviation: body.effective_hzco_deviation ?? null,
 
-    // Not available on embedded bodies; templates guard with {{#if ...}}
-    jump_shadow: null,
+    jump_shadow: body.jump_shadow ?? null,
     economics:   null,
 
     sector_name:      systemContext.sector_name,
@@ -335,7 +334,8 @@ export function buildPlayerData(payload) {
 
 export function buildGmData(payload) {
   const player = buildPlayerData(payload);
-  const js = payload.jump_shadow ?? {};
+  const js = payload.jump_shadow;
+  const jsKm = typeof js === "number" ? js : (js?.distance_km ?? null);
   const eco = payload.economics ?? {};
   const tl = TECH_LEVEL[payload.tech_level_code] ?? {};
 
@@ -356,11 +356,11 @@ export function buildGmData(payload) {
       { label: "MTU.label.twilightZone", value: payload.twilight_zone ? yes() : no() },
     ],
 
-    jumpShadowDetail: {
-      distanceKm: js.distance_km != null ? Number(js.distance_km).toLocaleString() : "—",
-      sourceName: js.source_name ?? "—",
+    jumpShadowDetail: jsKm != null ? {
+      distanceKm: Number(jsKm).toLocaleString(),
+      sourceName: (typeof js === "object" ? js?.source_name : null) ?? "—",
       times: buildJumpShadowTimes(payload),
-    },
+    } : null,
 
     starport: [
       { label: "MTU.label.starport",          value: `${payload.starport_code} — ${STARPORT[payload.starport_code]?.description ?? "—"}` },
@@ -494,11 +494,13 @@ export function buildGmData(payload) {
 }
 
 function buildJumpShadowTimes(payload) {
-  const times = payload.jump_shadow?.travel_times;
-  if (!times) return null;
-  return Object.entries(times).map(([g, h]) => ({
-    g: g.toUpperCase(),
-    value: formatJumpShadowTime(h),
+  const js = payload.jump_shadow;
+  if (js == null) return null;
+  const km = typeof js === "number" ? js : js.distance_km;
+  if (!km || km <= 0) return null;
+  return [1, 2, 3, 4, 5, 6].map((g) => ({
+    g: `${g}G`,
+    value: formatJumpShadowTime(calcTransitHours(km, g)),
   }));
 }
 

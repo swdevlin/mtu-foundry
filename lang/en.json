@@ -23,7 +23,6 @@
     },
     "menu": {
       "refreshFromMtu": "Refresh from MTU",
-      "editMtuId": "Edit MTU ID",
       "openImporter": "Open MTU importer"
     },
     "warn": {
@@ -39,8 +38,6 @@
       "refreshFailed": "MTU refresh failed: {message}",
       "entryMissingMetadata": "This journal entry is missing MTU metadata.",
       "entryRefreshed": "MTU journal \"{name}\" refreshed.",
-      "updateFailed": "MTU update failed: {message}",
-      "entryUpdated": "MTU journal \"{name}\" updated.",
       "gmOnly": "Only a GM can import MTU journals.",
       "fetchFailed": "Could not fetch MTU data: {message}",
       "entryCreated": "Created MTU journal \"{name}\".",
@@ -49,15 +46,6 @@
       "subsectorDone": "Imported {count} star systems.",
       "subsectorEmpty": "No star systems found in this subsector.",
       "systemImportFailed": "Failed to import system {id}: {message}"
-    },
-    "dialog": {
-      "editId": {
-        "title": "Edit Star System ID",
-        "label": "Star System ID",
-        "notes": "Enter a numeric ID or a full star system URL. All pages will be refreshed.",
-        "save": "Save & Refresh",
-        "cancel": "Cancel"
-      }
     },
     "importDialog": {
       "title": "Import MTU Star System",
