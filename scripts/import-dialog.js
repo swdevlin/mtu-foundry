@@ -197,11 +197,11 @@ export class MtuImportDialog extends FormApplication {
       }
     }
 
-    if (pageOptions.createSystemMapPage && system.star_system_map_url) {
+    if (pageOptions.createSystemMapPage && system.map_url) {
       pages.push({
         name: game.i18n.localize("MTU.page.systemMap"),
         type: "image",
-        src: system.star_system_map_url,
+        src: system.map_url,
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
         flags: { [MODULE_ID]: { systemMap: true } },
       });

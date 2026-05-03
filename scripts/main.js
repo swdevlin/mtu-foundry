@@ -505,10 +505,10 @@ async function updateMtuJournalPages(entry, system, { campaignSlug, resourceId, 
 
   if (updateSystemMap) {
     const systemMapPage = findSystemMapPage(entry);
-    if (systemMapPage && system.star_system_map_url) {
+    if (systemMapPage && system.map_url) {
       updates.push({
         _id: systemMapPage.id,
-        src: system.star_system_map_url
+        src: system.map_url
       });
     }
   }
