@@ -34,79 +34,6 @@
   color: var(--color-text-light-secondary);
 }
 
-/* ── Rendered page ──────────────────────────────────────────── */
-
-.mtu-page {
-  padding: 0.5rem 1rem 1.5rem;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.mtu-title {
-  font-size: 1.6rem;
-  margin: 0 0 0.1rem;
-}
-
-.mtu-subtitle {
-  color: var(--color-text-light-secondary);
-  font-style: italic;
-  margin: 0 0 0.75rem;
-}
-
-.mtu-uwp {
-  margin: 0 0 0.75rem;
-}
-
-.mtu-page h2 {
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--color-border-light-secondary);
-  padding-bottom: 0.2rem;
-  margin: 1.2rem 0 0.4rem;
-}
-
-/* ── Data tables ────────────────────────────────────────────── */
-
-.mtu-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 0.5rem;
-}
-
-.mtu-table th,
-.mtu-table td {
-  padding: 0.2rem 0.5rem;
-  border-bottom: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.08));
-  vertical-align: top;
-}
-
-.mtu-table th {
-  font-weight: bold;
-  white-space: nowrap;
-  width: 11rem;
-  color: var(--color-text-dark-primary);
-}
-
-.mtu-table td {
-  color: var(--color-text-dark-secondary);
-}
-
-/* Horizontal variant for jump shadow times */
-.mtu-table--horizontal th,
-.mtu-table--horizontal td {
-  text-align: center;
-  width: auto;
-  white-space: nowrap;
-}
-
-/* ── Placeholder text ───────────────────────────────────────── */
-
-.mtu-placeholder {
-  color: var(--color-text-light-secondary);
-  font-style: italic;
-}
-
 /* ── Transit table ──────────────────────────────────────────── */
 
 .mtu-transit-scroll {
@@ -128,22 +55,4 @@
 
 .mtu-transit-table thead th:first-child {
   background: transparent;
-}
-
-.mtu-transit-self {
-  color: var(--color-text-light-secondary);
-  font-style: italic;
-}
-
-/* ── Overview bodies table ──────────────────────────────────── */
-
-.mtu-table--bodies th {
-  width: auto;
-}
-
-.mtu-moon-row th,
-.mtu-moon-row td {
-  padding-left: 1.5rem;
-  color: var(--color-text-dark-secondary);
-  font-style: italic;
 }

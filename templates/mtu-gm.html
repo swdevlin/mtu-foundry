@@ -1,10 +1,10 @@
-<div class="mtu-page">
-  <h1 class="mtu-title">{{name}}</h1>
-  <p class="mtu-subtitle">{{type}}</p>
-  <p class="mtu-uwp"><strong>{{localize "MTU.label.uwp"}}:</strong> <code>{{profile.[0].value}}</code></p>
+<div>
+  <h1>{{name}}</h1>
+  <p><em>{{type}}</em></p>
+  <p><strong>{{localize "MTU.label.uwp"}}:</strong> <code>{{profile.[0].value}}</code></p>
 
   <h2>{{localize "MTU.section.planetaryProfile"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each profile}}
       <tr>
@@ -17,7 +17,7 @@
 
   {{#if jumpShadow}}
   <h2>{{localize "MTU.section.jumpShadowTimes"}}</h2>
-  <table class="mtu-table mtu-table--horizontal">
+  <table>
     <thead>
       <tr>
         {{#each jumpShadow}}
@@ -36,7 +36,7 @@
   {{/if}}
 
   <h2>{{localize "MTU.section.location"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       <tr><th>{{localize "MTU.location.orbiting"}}</th>   <td>{{location.orbiting}}</td></tr>
       <tr><th>{{localize "MTU.location.starSystem"}}</th>  <td>{{location.starSystem}}</td></tr>
@@ -46,7 +46,7 @@
   </table>
 
   <h2>{{localize "MTU.section.orbitalData"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each orbital}}
       <tr>
@@ -62,7 +62,7 @@
   <p><strong>{{localize "MTU.jumpShadow.distanceToClear"}}</strong> {{jumpShadowDetail.distanceKm}} km</p>
   <p><strong>{{localize "MTU.jumpShadow.shadowSource"}}</strong> {{jumpShadowDetail.sourceName}}</p>
   {{#if jumpShadowDetail.times}}
-  <table class="mtu-table mtu-table--horizontal">
+  <table>
     <thead>
       <tr>
         {{#each jumpShadowDetail.times}}
@@ -82,7 +82,7 @@
   {{/if}}
 
   <h2>{{localize "MTU.section.starport"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each starport}}
       <tr>
@@ -94,7 +94,7 @@
   </table>
 
   <h2>{{localize "MTU.section.physicalData"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each physical}}
       <tr>
@@ -106,7 +106,7 @@
   </table>
 
   <h2>{{localize "MTU.section.environmentalData"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each environmental}}
       <tr>
@@ -118,7 +118,7 @@
   </table>
 
   <h2>{{localize "MTU.section.atmosphere"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each atmosphere}}
       <tr>
@@ -130,7 +130,7 @@
   </table>
 
   <h2>{{localize "MTU.section.hydrographics"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each hydrographics}}
       <tr>
@@ -142,7 +142,7 @@
   </table>
 
   <h2>{{localize "MTU.section.population"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each population}}
       <tr>
@@ -154,7 +154,7 @@
   </table>
 
   <h2>{{localize "MTU.section.government"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each government}}
       <tr>
@@ -166,7 +166,7 @@
   </table>
 
   <h2>{{localize "MTU.section.lawLevel"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each lawLevel}}
       <tr>
@@ -178,7 +178,7 @@
   </table>
 
   <h2>{{localize "MTU.section.techLevel"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each techLevel}}
       <tr>

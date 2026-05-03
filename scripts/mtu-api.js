@@ -62,6 +62,48 @@ export async function fetchStarSystem(campaignSlug, resourceId) {
   return response.json();
 }
 
+/* ── Subsector URL / fetch ──────────────────────────────────── */
+
+export function isSubsectorInput(input) {
+  const trimmed = input.trim();
+  if (/^\d+$/.test(trimmed)) return false;
+  try {
+    const parts = new URL(trimmed).pathname.split("/").filter(Boolean);
+    return parts.includes("subsectors");
+  } catch {
+    return false;
+  }
+}
+
+export function parseSubsectorInput(input, defaultSlug) {
+  const trimmed = input.trim();
+  if (/^\d+$/.test(trimmed)) {
+    if (!defaultSlug) throw new Error(game.i18n.localize("MTU.error.needCampaignSlug"));
+    return { campaignSlug: defaultSlug, resourceId: trimmed };
+  }
+  const url = new URL(trimmed);
+  const parts = url.pathname.split("/").filter(Boolean);
+  const idx = parts.indexOf("subsectors");
+  if (parts[0] !== "c" || idx === -1) {
+    throw new Error(game.i18n.localize("MTU.error.invalidSubsectorUrl"));
+  }
+  return { campaignSlug: parts[1], resourceId: parts[idx + 1]?.replace(/\.json$/, "") };
+}
+
+export function buildSubsectorUrl(campaignSlug, resourceId) {
+  return `https://mytravelleruniverse.net/c/${campaignSlug}/api/subsectors/${resourceId}`;
+}
+
+export async function fetchSubsector(campaignSlug, resourceId) {
+  const url = buildSubsectorUrl(campaignSlug, resourceId);
+  const response = await fetch(url, {
+    headers: buildHeaders({ includeAuth: true }),
+    credentials: "omit",
+  });
+  if (!response.ok) throw new Error(game.i18n.format("MTU.error.fetchHttpError", { status: response.status, id: resourceId }));
+  return response.json();
+}
+
 /* ── System context & normalization ────────────────────────── */
 
 export function buildSystemContext(system) {
@@ -173,30 +215,14 @@ export function buildOverviewData(system) {
 }
 
 function buildBodyList(system) {
-  const list = [];
-  for (const body of system.primary_star?.stellar_objects ?? []) {
-    list.push({
-      label:   body.orbit_sequence ?? "—",
-      type:    humaniseType(body.type ?? ""),
-      uwp:     body.uwp ?? null,
-      orbit:   body.au != null ? `${Number(body.au).toFixed(3)} AU` : "—",
-      moons:   body.moons?.length ?? 0,
-      safeJump: body.safe_jump_time ?? "—",
-      isMoon:  false,
-    });
-    for (const moon of body.moons ?? []) {
-      list.push({
-        label:   moon.orbit_sequence ?? "—",
-        type:    humaniseType(moon.type ?? ""),
-        uwp:     moon.uwp ?? null,
-        orbit:   "—",
-        moons:   0,
-        safeJump: moon.safe_jump_time ?? "—",
-        isMoon:  true,
-      });
-    }
-  }
-  return list;
+  return (system.primary_star?.stellar_objects ?? []).map((body) => ({
+    label:    body.orbit_sequence ?? "—",
+    type:     humaniseType(body.type ?? ""),
+    uwp:      body.uwp ?? null,
+    orbit:    body.au != null ? `${Number(body.au).toFixed(3)} AU` : "—",
+    moons:    body.moons?.length ?? 0,
+    safeJump: body.safe_jump_time ?? "—",
+  }));
 }
 
 /* ── Transit page data ──────────────────────────────────────── */

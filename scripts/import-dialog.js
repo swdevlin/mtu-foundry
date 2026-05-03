@@ -6,9 +6,12 @@ import {
   buildSystemContext,
   buildTransitData,
   fetchStarSystem,
+  fetchSubsector,
   findMainWorld,
+  isSubsectorInput,
   normalizeBodyPayload,
   parseStarSystemInput,
+  parseSubsectorInput,
 } from "./mtu-api.js";
 
 export class MtuImportDialog extends FormApplication {
@@ -29,13 +32,13 @@ export class MtuImportDialog extends FormApplication {
 
   getData() {
     return {
-      defaultFolderName:  game.settings.get(MODULE_ID, "defaultFolderName"),
-      mDrive:             game.settings.get(MODULE_ID, "mDrive"),
-      createOverviewPage: true,
-      createPlayerPage:   true,
-      createGmPage:       true,
+      defaultFolderName:   game.settings.get(MODULE_ID, "defaultFolderName"),
+      mDrive:              game.settings.get(MODULE_ID, "mDrive"),
+      createOverviewPage:  true,
+      createPlayerPage:    true,
+      createGmPage:        true,
       createSystemMapPage: true,
-      createTransitPage:  true,
+      createTransitPage:   true,
     };
   }
 
@@ -48,32 +51,88 @@ export class MtuImportDialog extends FormApplication {
     const data = foundry.utils.expandObject(formData);
     const defaultSlug = game.settings.get(MODULE_ID, "campaignSlug");
     const mDrive = Math.min(10, Math.max(1, parseInt(data.mDrive, 10) || 1));
-
-    let parsed;
-    try {
-      parsed = parseStarSystemInput(data.sourceUrl, defaultSlug);
-    } catch (err) {
-      ui.notifications.error(err.message);
-      return;
-    }
-
-    let system;
-    try {
-      system = await fetchStarSystem(parsed.campaignSlug, parsed.resourceId);
-    } catch (err) {
-      ui.notifications.error(game.i18n.format("MTU.notify.fetchFailed", { message: err.message }));
-      return;
-    }
+    const pageOptions = {
+      createOverviewPage:  data.createOverviewPage,
+      createPlayerPage:    data.createPlayerPage,
+      createGmPage:        data.createGmPage,
+      createSystemMapPage: data.createSystemMapPage,
+      createTransitPage:   data.createTransitPage,
+    };
 
     await game.settings.set(MODULE_ID, "mDrive", mDrive);
+    const folder = await this.resolveFolder(data.folderName?.trim());
 
+    if (isSubsectorInput(data.sourceUrl)) {
+      let parsed;
+      try {
+        parsed = parseSubsectorInput(data.sourceUrl, defaultSlug);
+      } catch (err) {
+        ui.notifications.error(err.message);
+        return;
+      }
+
+      let subsector;
+      try {
+        subsector = await fetchSubsector(parsed.campaignSlug, parsed.resourceId);
+      } catch (err) {
+        ui.notifications.error(game.i18n.format("MTU.notify.fetchFailed", { message: err.message }));
+        return;
+      }
+
+      const ids = (subsector.star_systems ?? []).map((s) => (typeof s === "object" ? s.id : s));
+      if (ids.length === 0) {
+        ui.notifications.warn(game.i18n.localize("MTU.notify.subsectorEmpty"));
+        return;
+      }
+
+      ui.notifications.info(game.i18n.format("MTU.notify.subsectorImporting", { count: ids.length }));
+      let successCount = 0;
+
+      for (const id of ids) {
+        try {
+          const system = await fetchStarSystem(parsed.campaignSlug, String(id));
+          await this.createSystemJournal(system, parsed.campaignSlug, String(id), mDrive, folder, pageOptions);
+          successCount++;
+        } catch (err) {
+          console.error(`MTU | Failed to import system ${id}:`, err);
+          ui.notifications.warn(game.i18n.format("MTU.notify.systemImportFailed", { id, message: err.message }));
+        }
+      }
+
+      ui.notifications.info(game.i18n.format("MTU.notify.subsectorDone", { count: successCount }));
+
+    } else {
+      let parsed;
+      try {
+        parsed = parseStarSystemInput(data.sourceUrl, defaultSlug);
+      } catch (err) {
+        ui.notifications.error(err.message);
+        return;
+      }
+
+      let system;
+      try {
+        system = await fetchStarSystem(parsed.campaignSlug, parsed.resourceId);
+      } catch (err) {
+        ui.notifications.error(game.i18n.format("MTU.notify.fetchFailed", { message: err.message }));
+        return;
+      }
+
+      const entry = await this.createSystemJournal(
+        system, parsed.campaignSlug, parsed.resourceId, mDrive, folder, pageOptions,
+        data.name?.trim() || null
+      );
+      ui.notifications.info(game.i18n.format("MTU.notify.entryCreated", { name: entry.name }));
+      entry.sheet.render(true);
+    }
+  }
+
+  async createSystemJournal(system, campaignSlug, resourceId, mDrive, folder, pageOptions, nameOverride = null) {
     const ctx = buildSystemContext(system);
     const mainWorldBody = findMainWorld(system);
 
-    const entryName = data.name?.trim() || ctx.star_system_name
-      || game.i18n.format("MTU.page.defaultName", { id: parsed.resourceId });
-
-    const folder = await this._resolveFolder(data.folderName?.trim());
+    const entryName = nameOverride || ctx.star_system_name
+      || game.i18n.format("MTU.page.defaultName", { id: resourceId });
 
     const entry = await JournalEntry.create({
       name: entryName,
@@ -81,17 +140,17 @@ export class MtuImportDialog extends FormApplication {
       ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
       flags: {
         [MODULE_ID]: {
-          campaignSlug:  parsed.campaignSlug,
-          resourceId:    parsed.resourceId,
-          importSource:  "mytravelleruniverse",
-          importType:    "starSystem",
+          campaignSlug,
+          resourceId,
+          importSource: "mytravelleruniverse",
+          importType:   "starSystem",
         },
       },
     });
 
     const pages = [];
 
-    if (data.createOverviewPage) {
+    if (pageOptions.createOverviewPage) {
       const html = await renderTemplate(
         `modules/${MODULE_ID}/templates/mtu-overview.html`,
         buildOverviewData(system)
@@ -101,20 +160,15 @@ export class MtuImportDialog extends FormApplication {
         type: "text",
         text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
-        flags: {
-          [MODULE_ID]: { live: true, mode: "overview", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
-        },
+        flags: { [MODULE_ID]: { live: true, mode: "overview", resourceId, campaignSlug } },
       });
     }
 
     if (mainWorldBody) {
-      const mainWorldCtx = {
-        ...ctx,
-        orbiting_name: buildStarLabel(system.primary_star),
-      };
+      const mainWorldCtx = { ...ctx, orbiting_name: buildStarLabel(system.primary_star) };
       const normalizedBody = normalizeBodyPayload(mainWorldBody, mainWorldCtx);
 
-      if (data.createPlayerPage) {
+      if (pageOptions.createPlayerPage) {
         const html = await renderTemplate(
           `modules/${MODULE_ID}/templates/mtu-player.html`,
           buildPlayerData(normalizedBody)
@@ -124,13 +178,11 @@ export class MtuImportDialog extends FormApplication {
           type: "text",
           text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
           ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
-          flags: {
-            [MODULE_ID]: { live: true, mode: "player", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
-          },
+          flags: { [MODULE_ID]: { live: true, mode: "player", resourceId, campaignSlug } },
         });
       }
 
-      if (data.createGmPage) {
+      if (pageOptions.createGmPage) {
         const html = await renderTemplate(
           `modules/${MODULE_ID}/templates/mtu-gm.html`,
           buildGmData(normalizedBody)
@@ -140,14 +192,12 @@ export class MtuImportDialog extends FormApplication {
           type: "text",
           text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
           ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
-          flags: {
-            [MODULE_ID]: { live: true, mode: "gm", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
-          },
+          flags: { [MODULE_ID]: { live: true, mode: "gm", resourceId, campaignSlug } },
         });
       }
     }
 
-    if (data.createSystemMapPage && system.star_system_map_url) {
+    if (pageOptions.createSystemMapPage && system.star_system_map_url) {
       pages.push({
         name: game.i18n.localize("MTU.page.systemMap"),
         type: "image",
@@ -157,7 +207,7 @@ export class MtuImportDialog extends FormApplication {
       });
     }
 
-    if (data.createTransitPage) {
+    if (pageOptions.createTransitPage) {
       const html = await renderTemplate(
         `modules/${MODULE_ID}/templates/mtu-transit.html`,
         buildTransitData(system, mDrive)
@@ -167,9 +217,7 @@ export class MtuImportDialog extends FormApplication {
         type: "text",
         text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
-        flags: {
-          [MODULE_ID]: { live: true, mode: "transit", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
-        },
+        flags: { [MODULE_ID]: { live: true, mode: "transit", resourceId, campaignSlug } },
       });
     }
 
@@ -177,11 +225,10 @@ export class MtuImportDialog extends FormApplication {
       await entry.createEmbeddedDocuments("JournalEntryPage", pages);
     }
 
-    ui.notifications.info(game.i18n.format("MTU.notify.entryCreated", { name: entry.name }));
-    entry.sheet.render(true);
+    return entry;
   }
 
-  async _resolveFolder(folderName) {
+  async resolveFolder(folderName) {
     const effectiveName = folderName || game.settings.get(MODULE_ID, "defaultFolderName");
     if (!effectiveName) return null;
 

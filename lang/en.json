@@ -44,7 +44,11 @@
       "gmOnly": "Only a GM can import MTU journals.",
       "fetchFailed": "Could not fetch MTU data: {message}",
       "entryCreated": "Created MTU journal \"{name}\".",
-      "noMainWorld": "No main world found in this star system."
+      "noMainWorld": "No main world found in this star system.",
+      "subsectorImporting": "Importing {count} star systems from subsector…",
+      "subsectorDone": "Imported {count} star systems.",
+      "subsectorEmpty": "No star systems found in this subsector.",
+      "systemImportFailed": "Failed to import system {id}: {message}"
     },
     "dialog": {
       "editId": {
@@ -60,7 +64,7 @@
       "sourceUrl": {
         "label": "Star System URL or ID",
         "placeholder": "https://mytravelleruniverse.net/c/campaign/star_systems/194575  or just  194575",
-        "notes": "Paste a full MyTravellerUniverse star system URL, or just the numeric ID (uses the campaign slug from module settings)."
+        "notes": "Paste a star system URL, a subsector URL, or a bare numeric ID (star system, uses the campaign slug from module settings). A subsector URL imports all systems in the subsector."
       },
       "journalName": {
         "label": "Journal name",
@@ -100,7 +104,7 @@
     },
     "page": {
       "overview":        "Overview",
-      "mainWorldPlayer": "Main World — Player",
+      "mainWorldPlayer": "Main World",
       "mainWorldGm":     "Main World — GM",
       "systemMap":       "System Map",
       "transit":         "Transit Times",
@@ -109,7 +113,8 @@
     "error": {
       "needCampaignSlug": "Enter a full URL or set the campaign slug in module settings.",
       "invalidUrl": "URL does not look like a star system URL.",
-      "fetchHttpError": "HTTP {status} fetching star system {id}"
+      "invalidSubsectorUrl": "URL does not look like a subsector URL.",
+      "fetchHttpError": "HTTP {status} fetching resource {id}"
     },
     "section": {
       "planetaryProfile": "Planetary Profile",

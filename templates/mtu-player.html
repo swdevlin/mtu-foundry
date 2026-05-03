@@ -1,9 +1,9 @@
-<div class="mtu-page">
-  <h1 class="mtu-title">{{name}}</h1>
-  <p class="mtu-subtitle">{{type}}</p>
+<div>
+  <h1>{{name}}</h1>
+  <p><em>{{type}}</em></p>
 
   <h2>{{localize "MTU.section.planetaryProfile"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       {{#each profile}}
       <tr>
@@ -16,7 +16,7 @@
 
   {{#if jumpShadow}}
   <h2>{{localize "MTU.section.jumpShadowTimes"}}</h2>
-  <table class="mtu-table mtu-table--horizontal">
+  <table>
     <thead>
       <tr>
         {{#each jumpShadow}}
@@ -35,7 +35,7 @@
   {{/if}}
 
   <h2>{{localize "MTU.section.location"}}</h2>
-  <table class="mtu-table">
+  <table>
     <tbody>
       <tr><th>{{localize "MTU.location.orbiting"}}</th>   <td>{{location.orbiting}}</td></tr>
       <tr><th>{{localize "MTU.location.starSystem"}}</th>  <td>{{location.starSystem}}</td></tr>
