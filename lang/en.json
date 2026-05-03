@@ -122,7 +122,8 @@
       "starSystem":     "Star System",
       "systemSummary":  "System Summary",
       "systemContents": "System Contents",
-      "systemBodies":   "System Bodies"
+      "systemBodies":   "System Bodies",
+      "gasGiantRefuel": "Best Gas Giant for Wilderness Refueling"
     },
     "location": {
       "orbiting": "Orbiting",

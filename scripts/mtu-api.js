@@ -188,12 +188,29 @@ export function findMainWorld(system) {
 
 /* ── Overview page data ─────────────────────────────────────── */
 
+function findBestRefuelGasGiant(system) {
+  const bodies = system.primary_star?.stellar_objects ?? [];
+  let best = null;
+  let bestKm = Infinity;
+  for (const body of bodies) {
+    if (!/gas/i.test(body.type ?? "")) continue;
+    const km = body.jump_shadow;
+    if (typeof km === "number" && km > 0 && km < bestKm) {
+      best = body;
+      bestKm = km;
+    }
+  }
+  return best;
+}
+
 export function buildOverviewData(system) {
   const ctx = buildSystemContext(system);
   const star = system.primary_star ?? {};
   const primaryStar = star.stellar_type
     ? `${star.stellar_type}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim()
     : "—";
+
+  const gg = findBestRefuelGasGiant(system);
 
   return {
     systemName:    ctx.star_system_name,
@@ -210,6 +227,14 @@ export function buildOverviewData(system) {
       belts:       system.belt_count ?? 0,
     },
     bodies: buildBodyList(system),
+    gasGiantJumpShadow: gg ? {
+      label:      [gg.orbit_sequence, gg.name].filter(Boolean).join(" — "),
+      safeJumpKm: Number(gg.jump_shadow).toLocaleString(),
+      times:      [1, 2, 3, 4, 5, 6].map((g) => ({
+        g:     `${g}G`,
+        value: formatTransitTime(calcTransitHours(gg.jump_shadow, g)),
+      })),
+    } : null,
   };
 }
 

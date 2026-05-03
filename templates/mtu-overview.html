@@ -56,4 +56,25 @@
       {{/each}}
     </tbody>
   </table>
+
+  {{#if gasGiantJumpShadow}}
+  <h2>{{localize "MTU.section.gasGiantRefuel"}}</h2>
+  <p><em>{{gasGiantJumpShadow.label}} · {{gasGiantJumpShadow.safeJumpKm}} km to safe jump</em></p>
+  <table>
+    <thead>
+      <tr>
+        {{#each gasGiantJumpShadow.times}}
+        <th>{{this.g}}</th>
+        {{/each}}
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        {{#each gasGiantJumpShadow.times}}
+        <td>{{this.value}}</td>
+        {{/each}}
+      </tr>
+    </tbody>
+  </table>
+  {{/if}}
 </div>
