@@ -21,8 +21,24 @@
     </div>
   </div>
 
+  <div class="form-group">
+    <label for="mtu-m-drive">{{localize "MTU.importDialog.mDrive.label"}}</label>
+    <div class="form-fields">
+      <input id="mtu-m-drive" type="number" name="mDrive" value="{{mDrive}}" min="1" max="10" step="1" style="width:4rem" />
+    </div>
+    <p class="notes">{{localize "MTU.importDialog.mDrive.notes"}}</p>
+  </div>
+
   <fieldset>
     <legend>{{localize "MTU.importDialog.pages.legend"}}</legend>
+
+    <div class="form-group stacked">
+      <label class="checkbox">
+        <input type="checkbox" name="createOverviewPage" checked />
+        {{localize "MTU.importDialog.pages.overviewPage.label"}}
+      </label>
+      <p class="notes">{{localize "MTU.importDialog.pages.overviewPage.notes"}}</p>
+    </div>
 
     <div class="form-group stacked">
       <label class="checkbox">
@@ -46,6 +62,14 @@
         {{localize "MTU.importDialog.pages.systemMapPage.label"}}
       </label>
       <p class="notes">{{localize "MTU.importDialog.pages.systemMapPage.notes"}}</p>
+    </div>
+
+    <div class="form-group stacked">
+      <label class="checkbox">
+        <input type="checkbox" name="createTransitPage" checked />
+        {{localize "MTU.importDialog.pages.transitPage.label"}}
+      </label>
+      <p class="notes">{{localize "MTU.importDialog.pages.transitPage.notes"}}</p>
     </div>
   </fieldset>
 

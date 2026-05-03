@@ -106,3 +106,44 @@
   color: var(--color-text-light-secondary);
   font-style: italic;
 }
+
+/* ── Transit table ──────────────────────────────────────────── */
+
+.mtu-transit-scroll {
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.mtu-transit-table {
+  min-width: max-content;
+}
+
+.mtu-transit-table th,
+.mtu-transit-table td {
+  text-align: center;
+  white-space: nowrap;
+  width: auto;
+  padding: 0.2rem 0.6rem;
+}
+
+.mtu-transit-table thead th:first-child {
+  background: transparent;
+}
+
+.mtu-transit-self {
+  color: var(--color-text-light-secondary);
+  font-style: italic;
+}
+
+/* ── Overview bodies table ──────────────────────────────────── */
+
+.mtu-table--bodies th {
+  width: auto;
+}
+
+.mtu-moon-row th,
+.mtu-moon-row td {
+  padding-left: 1.5rem;
+  color: var(--color-text-dark-secondary);
+  font-style: italic;
+}

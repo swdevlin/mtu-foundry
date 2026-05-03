@@ -1,0 +1,64 @@
+<div class="mtu-page">
+  <h1 class="mtu-title">{{systemName}}</h1>
+  <p class="mtu-subtitle">{{localize "MTU.section.starSystem"}}</p>
+
+  <h2>{{localize "MTU.section.systemSummary"}}</h2>
+  <table class="mtu-table">
+    <tbody>
+      <tr><th>{{localize "MTU.label.sector"}}</th>        <td>{{sector}}</td></tr>
+      <tr><th>{{localize "MTU.label.subsector"}}</th>     <td>{{subsector}}</td></tr>
+      <tr><th>{{localize "MTU.label.primaryStar"}}</th>   <td>{{primaryStar}}</td></tr>
+      <tr><th>{{localize "MTU.label.mainWorld"}}</th>     <td>{{mainWorldName}}</td></tr>
+      <tr><th>{{localize "MTU.label.mainWorldUwp"}}</th>  <td><code>{{mainWorldUwp}}</code></td></tr>
+      {{#if remarks}}
+      <tr><th>{{localize "MTU.label.remarks"}}</th>       <td>{{remarks}}</td></tr>
+      {{/if}}
+    </tbody>
+  </table>
+
+  <h2>{{localize "MTU.section.systemContents"}}</h2>
+  <table class="mtu-table mtu-table--horizontal">
+    <thead>
+      <tr>
+        <th>{{localize "MTU.label.stars"}}</th>
+        <th>{{localize "MTU.label.gasGiants"}}</th>
+        <th>{{localize "MTU.label.terrestrial"}}</th>
+        <th>{{localize "MTU.label.belts"}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{counts.stars}}</td>
+        <td>{{counts.gasGiants}}</td>
+        <td>{{counts.terrestrial}}</td>
+        <td>{{counts.belts}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>{{localize "MTU.section.systemBodies"}}</h2>
+  <table class="mtu-table mtu-table--bodies">
+    <thead>
+      <tr>
+        <th>{{localize "MTU.label.orbit"}}</th>
+        <th>{{localize "MTU.label.type"}}</th>
+        <th>{{localize "MTU.label.uwp"}}</th>
+        <th>{{localize "MTU.label.au"}}</th>
+        <th>{{localize "MTU.label.moons"}}</th>
+        <th>{{localize "MTU.label.safeJump"}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each bodies}}
+      <tr class="{{#if isMoon}}mtu-moon-row{{/if}}">
+        <th>{{label}}</th>
+        <td>{{type}}</td>
+        <td>{{#if uwp}}<code>{{uwp}}</code>{{else}}—{{/if}}</td>
+        <td>{{orbit}}</td>
+        <td>{{moons}}</td>
+        <td>{{safeJump}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>

@@ -1,9 +1,14 @@
 import {
   MODULE_ID,
   buildGmData,
+  buildOverviewData,
   buildPlayerData,
-  fetchStellarObject,
-  parseStellarObjectInput,
+  buildSystemContext,
+  buildTransitData,
+  fetchStarSystem,
+  findMainWorld,
+  normalizeBodyPayload,
+  parseStarSystemInput,
 } from "./mtu-api.js";
 
 export class MtuImportDialog extends FormApplication {
@@ -24,10 +29,13 @@ export class MtuImportDialog extends FormApplication {
 
   getData() {
     return {
-      defaultFolderName: game.settings.get(MODULE_ID, "defaultFolderName"),
-      createPlayerPage: true,
-      createGmPage: true,
+      defaultFolderName:  game.settings.get(MODULE_ID, "defaultFolderName"),
+      mDrive:             game.settings.get(MODULE_ID, "mDrive"),
+      createOverviewPage: true,
+      createPlayerPage:   true,
+      createGmPage:       true,
       createSystemMapPage: true,
+      createTransitPage:  true,
     };
   }
 
@@ -39,26 +47,32 @@ export class MtuImportDialog extends FormApplication {
 
     const data = foundry.utils.expandObject(formData);
     const defaultSlug = game.settings.get(MODULE_ID, "campaignSlug");
+    const mDrive = Math.min(10, Math.max(1, parseInt(data.mDrive, 10) || 1));
 
     let parsed;
     try {
-      parsed = parseStellarObjectInput(data.sourceUrl, defaultSlug);
+      parsed = parseStarSystemInput(data.sourceUrl, defaultSlug);
     } catch (err) {
       ui.notifications.error(err.message);
       return;
     }
 
-    let payload;
+    let system;
     try {
-      payload = await fetchStellarObject(parsed.campaignSlug, parsed.resourceId);
+      system = await fetchStarSystem(parsed.campaignSlug, parsed.resourceId);
     } catch (err) {
       ui.notifications.error(game.i18n.format("MTU.notify.fetchFailed", { message: err.message }));
       return;
     }
 
-    const sectorHex = [payload.sector_name, payload.hex].filter(Boolean).join(" ");
-    const entryName = data.name?.trim() || payload.name || sectorHex
+    await game.settings.set(MODULE_ID, "mDrive", mDrive);
+
+    const ctx = buildSystemContext(system);
+    const mainWorldBody = findMainWorld(system);
+
+    const entryName = data.name?.trim() || ctx.star_system_name
       || game.i18n.format("MTU.page.defaultName", { id: parsed.resourceId });
+
     const folder = await this._resolveFolder(data.folderName?.trim());
 
     const entry = await JournalEntry.create({
@@ -67,56 +81,94 @@ export class MtuImportDialog extends FormApplication {
       ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
       flags: {
         [MODULE_ID]: {
-          campaignSlug: parsed.campaignSlug,
-          resourceId: parsed.resourceId,
-          importSource: "mytravelleruniverse",
+          campaignSlug:  parsed.campaignSlug,
+          resourceId:    parsed.resourceId,
+          importSource:  "mytravelleruniverse",
+          importType:    "starSystem",
         },
       },
     });
 
     const pages = [];
 
-    if (data.createPlayerPage) {
-      const playerHtml = await renderTemplate(
-        `modules/${MODULE_ID}/templates/mtu-player.html`,
-        buildPlayerData(payload)
+    if (data.createOverviewPage) {
+      const html = await renderTemplate(
+        `modules/${MODULE_ID}/templates/mtu-overview.html`,
+        buildOverviewData(system)
       );
-
       pages.push({
-        name: this.pageName("MTU.page.playerData", payload),
+        name: game.i18n.localize("MTU.page.overview"),
         type: "text",
-        text: { content: playerHtml, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
+        text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
         flags: {
-          [MODULE_ID]: { live: true, mode: "player", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
+          [MODULE_ID]: { live: true, mode: "overview", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
         },
       });
     }
 
-    if (data.createGmPage) {
-      const gmHtml = await renderTemplate(
-        `modules/${MODULE_ID}/templates/mtu-gm.html`,
-        buildGmData(payload)
-      );
-      pages.push({
-        name: this.pageName("MTU.page.gmData", payload),
-        type: "text",
-        text: { content: gmHtml, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
-        ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
-        flags: {
-          [MODULE_ID]: { live: true, mode: "gm", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
-        },
-      });
+    if (mainWorldBody) {
+      const mainWorldCtx = {
+        ...ctx,
+        orbiting_name: buildStarLabel(system.primary_star),
+      };
+      const normalizedBody = normalizeBodyPayload(mainWorldBody, mainWorldCtx);
+
+      if (data.createPlayerPage) {
+        const html = await renderTemplate(
+          `modules/${MODULE_ID}/templates/mtu-player.html`,
+          buildPlayerData(normalizedBody)
+        );
+        pages.push({
+          name: game.i18n.localize("MTU.page.mainWorldPlayer"),
+          type: "text",
+          text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
+          ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+          flags: {
+            [MODULE_ID]: { live: true, mode: "player", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
+          },
+        });
+      }
+
+      if (data.createGmPage) {
+        const html = await renderTemplate(
+          `modules/${MODULE_ID}/templates/mtu-gm.html`,
+          buildGmData(normalizedBody)
+        );
+        pages.push({
+          name: game.i18n.localize("MTU.page.mainWorldGm"),
+          type: "text",
+          text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
+          ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
+          flags: {
+            [MODULE_ID]: { live: true, mode: "gm", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
+          },
+        });
+      }
     }
 
-    if (data.createSystemMapPage && payload.star_system_map_url) {
+    if (data.createSystemMapPage && system.star_system_map_url) {
       pages.push({
         name: game.i18n.localize("MTU.page.systemMap"),
         type: "image",
-        src: payload.star_system_map_url,
+        src: system.star_system_map_url,
+        ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+        flags: { [MODULE_ID]: { systemMap: true } },
+      });
+    }
+
+    if (data.createTransitPage) {
+      const html = await renderTemplate(
+        `modules/${MODULE_ID}/templates/mtu-transit.html`,
+        buildTransitData(system, mDrive)
+      );
+      pages.push({
+        name: game.i18n.localize("MTU.page.transit"),
+        type: "text",
+        text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
         flags: {
-          [MODULE_ID]: { systemMap: true },
+          [MODULE_ID]: { live: true, mode: "transit", resourceId: parsed.resourceId, campaignSlug: parsed.campaignSlug },
         },
       });
     }
@@ -129,10 +181,6 @@ export class MtuImportDialog extends FormApplication {
     entry.sheet.render(true);
   }
 
-  pageName(template, payload) {
-    return game.i18n.format(template, {type: game.i18n.localize("MTU.stellarBodyType." + payload.type)});
-  }
-
   async _resolveFolder(folderName) {
     const effectiveName = folderName || game.settings.get(MODULE_ID, "defaultFolderName");
     if (!effectiveName) return null;
@@ -142,4 +190,9 @@ export class MtuImportDialog extends FormApplication {
 
     return Folder.create({ name: effectiveName, type: "JournalEntry", color: "#4b5563" });
   }
+}
+
+function buildStarLabel(star) {
+  if (!star) return "—";
+  return `${star.stellar_type ?? ""}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim() || "—";
 }

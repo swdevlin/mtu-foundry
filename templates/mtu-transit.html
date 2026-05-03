@@ -1,0 +1,29 @@
+<div class="mtu-page">
+  <h1 class="mtu-title">{{localize "MTU.page.transit"}}</h1>
+  <p class="mtu-subtitle">{{localize "MTU.transit.subtitle"}} — {{localize "MTU.transit.mDriveLabel"}} {{mDrive}}G</p>
+
+  <div class="mtu-transit-scroll">
+    <table class="mtu-table mtu-transit-table">
+      <thead>
+        <tr>
+          <th></th>
+          {{#each headers}}
+          <th>{{this}}</th>
+          {{/each}}
+        </tr>
+      </thead>
+      <tbody>
+        {{#each rows}}
+        <tr>
+          <th>{{label}}</th>
+          {{#each cells}}
+          <td class="{{#if self}}mtu-transit-self{{/if}}">{{value}}</td>
+          {{/each}}
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="mtu-placeholder">{{localize "MTU.transit.note"}}</p>
+</div>

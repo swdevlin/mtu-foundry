@@ -12,10 +12,14 @@
       "campaignSlug": {
         "name": "Campaign slug",
         "hint": "Used when importing by bare numeric ID. Overridden by the slug in any pasted URL."
+      },
+      "mDrive": {
+        "name": "Default M-drive rating",
+        "hint": "Pre-fills the M-drive field in the import dialog. Automatically updated after each import."
       }
     },
     "button": {
-      "import": "Import MTU URL"
+      "import": "Import MTU Star System"
     },
     "menu": {
       "refreshFromMtu": "Refresh from MTU",
@@ -39,63 +43,73 @@
       "entryUpdated": "MTU journal \"{name}\" updated.",
       "gmOnly": "Only a GM can import MTU journals.",
       "fetchFailed": "Could not fetch MTU data: {message}",
-      "entryCreated": "Created MTU journal \"{name}\"."
+      "entryCreated": "Created MTU journal \"{name}\".",
+      "noMainWorld": "No main world found in this star system."
     },
     "dialog": {
       "editId": {
-        "title": "Edit Stellar Object ID",
-        "label": "Stellar Object ID",
-        "notes": "Enter a numeric ID or a full stellar object URL. GM, Player, and System Map pages will be updated to use the new resource.",
+        "title": "Edit Star System ID",
+        "label": "Star System ID",
+        "notes": "Enter a numeric ID or a full star system URL. All pages will be refreshed.",
         "save": "Save & Refresh",
         "cancel": "Cancel"
       }
     },
     "importDialog": {
-      "title": "Import MTU Stellar Object",
+      "title": "Import MTU Star System",
       "sourceUrl": {
-        "label": "Stellar Object URL or ID",
-        "placeholder": "https://mytravelleruniverse.net/c/campaign/stellar_objects/66  or just  66",
-        "notes": "Paste a full MyTravellerUniverse stellar object URL, or just the numeric ID (uses the campaign slug from module settings)."
+        "label": "Star System URL or ID",
+        "placeholder": "https://mytravelleruniverse.net/c/campaign/star_systems/194575  or just  194575",
+        "notes": "Paste a full MyTravellerUniverse star system URL, or just the numeric ID (uses the campaign slug from module settings)."
       },
       "journalName": {
         "label": "Journal name",
-        "placeholder": "Leave blank to use the object name from MTU"
+        "placeholder": "Leave blank to use the system name from MTU"
       },
       "folder": {
         "label": "Folder"
       },
+      "mDrive": {
+        "label": "M-drive rating",
+        "notes": "Manoeuvre drive rating used to calculate transit times (1–10G). Saved for next import."
+      },
       "pages": {
         "legend": "Pages to create",
+        "overviewPage": {
+          "label": "Overview",
+          "notes": "System summary with star type, main world UWP, and body list. Visible to all players."
+        },
         "playerPage": {
-          "label": "Player page",
-          "notes": "Planetary profile, jump shadow times, and location. Visible to all players."
+          "label": "Main World — Player page",
+          "notes": "Planetary profile and location for the main world. Visible to all players."
         },
         "gmPage": {
-          "label": "GM page",
-          "notes": "Full detail: orbital data, starport economics, physical, environmental, population, government, law, and tech level. GM-only."
+          "label": "Main World — GM page",
+          "notes": "Full main world detail: orbital, starport, economics, population, government, law, and tech level. GM-only."
         },
         "systemMapPage": {
           "label": "System Map",
           "notes": "SVG map of the star system. Visible to all players."
+        },
+        "transitPage": {
+          "label": "Transit times",
+          "notes": "M-drive travel-time matrix between all bodies at the selected drive rating. Visible to all players."
         }
       },
       "submit": "Create Journal"
     },
     "page": {
-      "playerData": "{type} data",
-      "gmData": "GM {type} data",
-      "systemMap": "System Map",
-      "defaultName": "Stellar Object {id}"
+      "overview":        "Overview",
+      "mainWorldPlayer": "Main World — Player",
+      "mainWorldGm":     "Main World — GM",
+      "systemMap":       "System Map",
+      "transit":         "Transit Times",
+      "defaultName":     "Star System {id}"
     },
     "error": {
       "needCampaignSlug": "Enter a full URL or set the campaign slug in module settings.",
-      "invalidUrl": "URL does not look like a stellar object URL.",
-      "fetchHttpError": "HTTP {status} fetching stellar object {id}"
-    },
-    "stellarBodyType": {
-      "TerrestrialPlanet": "Planet",
-      "PlanetoidBelt": "Belt",
-      "GasGiant": "Gas Giant"
+      "invalidUrl": "URL does not look like a star system URL.",
+      "fetchHttpError": "HTTP {status} fetching star system {id}"
     },
     "section": {
       "planetaryProfile": "Planetary Profile",
@@ -111,7 +125,11 @@
       "population": "Population",
       "government": "Government",
       "lawLevel": "Law Level",
-      "techLevel": "Tech Level"
+      "techLevel": "Tech Level",
+      "starSystem":     "Star System",
+      "systemSummary":  "System Summary",
+      "systemContents": "System Contents",
+      "systemBodies":   "System Bodies"
     },
     "location": {
       "orbiting": "Orbiting",
@@ -123,10 +141,17 @@
       "distanceToClear": "Distance to Clear:",
       "shadowSource": "Shadow Source:"
     },
+    "transit": {
+      "subtitle":    "M-drive transit times between all system bodies",
+      "mDriveLabel": "M-drive",
+      "note":        "Times shown as hours (h) or days (d). Assumes constant-acceleration flip-and-burn at the rated G.",
+      "star":        "Star"
+    },
     "value": {
       "yes": "Yes",
       "no": "No",
-      "none": "None"
+      "none": "None",
+      "unnamed": "(unnamed)"
     },
     "label": {
       "uwp": "UWP",
@@ -220,7 +245,20 @@
       "heavyMilitary": "Heavy military",
       "manufacturing": "Manufacturing",
       "medical": "Medical",
-      "environmental": "Environmental"
+      "environmental": "Environmental",
+      "sector":       "Sector",
+      "subsector":    "Subsector",
+      "primaryStar":  "Primary Star",
+      "mainWorld":    "Main World",
+      "mainWorldUwp": "Main World UWP",
+      "remarks":      "Remarks",
+      "stars":        "Stars",
+      "gasGiants":    "Gas Giants",
+      "terrestrial":  "Terrestrial",
+      "belts":        "Belts",
+      "type":         "Type",
+      "moons":        "Moons",
+      "safeJump":     "Safe Jump"
     }
   }
 }

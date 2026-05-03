@@ -32,7 +32,9 @@ export function buildHeaders({ includeAuth = false } = {}) {
   return headers;
 }
 
-export function parseStellarObjectInput(input, defaultSlug) {
+/* ── Star system URL / fetch ────────────────────────────────── */
+
+export function parseStarSystemInput(input, defaultSlug) {
   const trimmed = input.trim();
   if (/^\d+$/.test(trimmed)) {
     if (!defaultSlug) throw new Error(game.i18n.localize("MTU.error.needCampaignSlug"));
@@ -40,18 +42,18 @@ export function parseStellarObjectInput(input, defaultSlug) {
   }
   const url = new URL(trimmed);
   const parts = url.pathname.split("/").filter(Boolean);
-  if (parts[0] !== "c" || parts[2] !== "stellar_objects") {
+  if (parts[0] !== "c" || parts[2] !== "star_systems") {
     throw new Error(game.i18n.localize("MTU.error.invalidUrl"));
   }
   return { campaignSlug: parts[1], resourceId: parts[3].replace(/\.json$/, "") };
 }
 
-export function buildStellarObjectUrl(campaignSlug, resourceId) {
-  return `https://mytravelleruniverse.net/c/${campaignSlug}/api/stellar_objects/${resourceId}`;
+export function buildStarSystemUrl(campaignSlug, resourceId) {
+  return `https://mytravelleruniverse.net/c/${campaignSlug}/api/star_systems/${resourceId}`;
 }
 
-export async function fetchStellarObject(campaignSlug, resourceId) {
-  const url = buildStellarObjectUrl(campaignSlug, resourceId);
+export async function fetchStarSystem(campaignSlug, resourceId) {
+  const url = buildStarSystemUrl(campaignSlug, resourceId);
   const response = await fetch(url, {
     headers: buildHeaders({ includeAuth: true }),
     credentials: "omit",
@@ -59,6 +61,191 @@ export async function fetchStellarObject(campaignSlug, resourceId) {
   if (!response.ok) throw new Error(game.i18n.format("MTU.error.fetchHttpError", { status: response.status, id: resourceId }));
   return response.json();
 }
+
+/* ── System context & normalization ────────────────────────── */
+
+export function buildSystemContext(system) {
+  const hex = String(system.x ?? 0).padStart(2, "0") + String(system.y ?? 0).padStart(2, "0");
+  const sectorName = system.sector_name ?? "—";
+  return {
+    sector_name:      sectorName,
+    hex,
+    star_system_name: system.name || `${sectorName} ${hex}`.trim() || `System ${system.id}`,
+    subsector_name:   system.subsector_name ?? "—",
+  };
+}
+
+// Maps a stellar body embedded in a star system response to the flat shape
+// expected by buildPlayerData / buildGmData.
+export function normalizeBodyPayload(body, systemContext) {
+  return {
+    name:             body.name ?? null,
+    type:             body.type ?? "",
+    uwp:              body.uwp ?? "—",
+    starport_code:    body.starport_code ?? "X",
+    size_code:        body.size ?? "—",
+    tech_level_code:  body.tech_level?.code ?? 0,
+
+    atmosphere:    body.atmosphere ?? {},
+    population:    body.population ?? {},
+    government:    body.government ?? {},
+    law_level:     body.law_level ?? {},
+    hydrographics: body.hydrographics ?? {},
+
+    gravity:       body.gravity ?? 0,
+    temperature:   body.temperature ?? 273.15,
+    diameter:      body.diameter ?? null,
+    mass:          body.mass ?? null,
+    density:       body.density ?? null,
+    rotation:      body.rotation ?? null,
+    axial_tilt:    body.axial_tilt ?? null,
+    albedo:        body.albedo ?? null,
+    greenhouse:    body.greenhouse ?? null,
+    retrograde:    body.retrograde ?? false,
+    tidal_lock:    body.tidal_lock ?? null,
+    twilight_zone: body.twilight_zone ?? false,
+    eccentricity:  body.eccentricity ?? null,
+    inclination:   body.inclination ?? null,
+    sidereal_day:  body.sidereal_day ?? null,
+
+    native_sophont:       body.native_sophont ?? false,
+    extinct_sophont:      body.extinct_sophont ?? false,
+    habitability_rating:  body.habitability_rating ?? null,
+    biomass_rating:       body.biomass_rating ?? null,
+    biodiversity_rating:  body.biodiversity_rating ?? null,
+    biocomplexity_rating: body.biocomplexity_rating ?? null,
+    resource_rating:      body.resource_rating ?? null,
+
+    orbit:                    body.orbit ?? null,
+    au:                       body.au ?? null,
+    period:                   body.period ?? null,
+    effective_hzco_deviation: body.effective_hzco_deviation ?? null,
+
+    // Not available on embedded bodies; templates guard with {{#if ...}}
+    jump_shadow: null,
+    economics:   null,
+
+    sector_name:      systemContext.sector_name,
+    hex:              systemContext.hex,
+    star_system_name: systemContext.star_system_name,
+    subsector_name:   systemContext.subsector_name ?? "—",
+    orbiting_name:    systemContext.orbiting_name ?? "—",
+  };
+}
+
+export function findMainWorld(system) {
+  const targetUwp = system.main_world?.uwp;
+  if (!targetUwp) return null;
+  for (const body of system.primary_star?.stellar_objects ?? []) {
+    if (body.uwp === targetUwp) return body;
+    for (const moon of body.moons ?? []) {
+      if (moon.uwp === targetUwp) return moon;
+    }
+  }
+  return null;
+}
+
+/* ── Overview page data ─────────────────────────────────────── */
+
+export function buildOverviewData(system) {
+  const ctx = buildSystemContext(system);
+  const star = system.primary_star ?? {};
+  const primaryStar = star.stellar_type
+    ? `${star.stellar_type}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim()
+    : "—";
+
+  return {
+    systemName:    ctx.star_system_name,
+    sector:        `${ctx.sector_name} · ${ctx.hex}`,
+    subsector:     ctx.subsector_name,
+    remarks:       system.remarks ?? "",
+    mainWorldUwp:  system.main_world?.uwp ?? "—",
+    mainWorldName: system.main_world?.name || game.i18n.localize("MTU.value.unnamed"),
+    primaryStar,
+    counts: {
+      stars:       system.star_count ?? 0,
+      gasGiants:   system.gas_giant_count ?? 0,
+      terrestrial: system.terrestrial_count ?? 0,
+      belts:       system.belt_count ?? 0,
+    },
+    bodies: buildBodyList(system),
+  };
+}
+
+function buildBodyList(system) {
+  const list = [];
+  for (const body of system.primary_star?.stellar_objects ?? []) {
+    list.push({
+      label:   body.orbit_sequence ?? "—",
+      type:    humaniseType(body.type ?? ""),
+      uwp:     body.uwp ?? null,
+      orbit:   body.au != null ? `${Number(body.au).toFixed(3)} AU` : "—",
+      moons:   body.moons?.length ?? 0,
+      safeJump: body.safe_jump_time ?? "—",
+      isMoon:  false,
+    });
+    for (const moon of body.moons ?? []) {
+      list.push({
+        label:   moon.orbit_sequence ?? "—",
+        type:    humaniseType(moon.type ?? ""),
+        uwp:     moon.uwp ?? null,
+        orbit:   "—",
+        moons:   0,
+        safeJump: moon.safe_jump_time ?? "—",
+        isMoon:  true,
+      });
+    }
+  }
+  return list;
+}
+
+/* ── Transit page data ──────────────────────────────────────── */
+
+// 1G = 10 m/s² = 0.01 km/s² (standard Traveller approximation)
+// orbit_position values are in km
+export function calcTransitHours(d_km, mDrive) {
+  if (d_km <= 0) return 0;
+  const accel = mDrive * 0.01;
+  return 2 * Math.sqrt(d_km / accel) / 3600;
+}
+
+export function formatTransitTime(hours) {
+  if (hours < 24) return `${hours.toFixed(1)}h`;
+  return `${(hours / 24).toFixed(1)}d`;
+}
+
+export function buildTransitData(system, mDrive) {
+  const star = system.primary_star ?? {};
+  const starLabel = star.stellar_type
+    ? `${star.stellar_type}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim()
+    : game.i18n.localize("MTU.transit.star");
+
+  const nodes = [{ label: starLabel, x: 0, y: 0 }];
+
+  for (const body of star.stellar_objects ?? []) {
+    const pos = body.orbit_position ?? {};
+    nodes.push({ label: body.orbit_sequence ?? "—", x: pos.x ?? 0, y: pos.y ?? 0 });
+    for (const moon of body.moons ?? []) {
+      const mpos = moon.orbit_position ?? {};
+      nodes.push({ label: moon.orbit_sequence ?? "—", x: mpos.x ?? 0, y: mpos.y ?? 0 });
+    }
+  }
+
+  const rows = nodes.map((from, i) => ({
+    label: from.label,
+    cells: nodes.map((to, j) => {
+      if (i === j) return { value: "—", self: true };
+      const dx = from.x - to.x;
+      const dy = from.y - to.y;
+      const d_km = Math.sqrt(dx * dx + dy * dy);
+      return { value: formatTransitTime(calcTransitHours(d_km, mDrive)), self: false };
+    }),
+  }));
+
+  return { mDrive, headers: nodes.map((n) => n.label), rows };
+}
+
+/* ── Player / GM data builders (unchanged) ──────────────────── */
 
 export function formatJumpShadowTime(hours) {
   if (hours >= 24) return `${(hours / 24).toFixed(1)}d`;

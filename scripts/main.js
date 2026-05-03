@@ -2,9 +2,14 @@ import { MtuImportDialog } from "./import-dialog.js";
 import {
   MODULE_ID,
   buildGmData,
+  buildOverviewData,
   buildPlayerData,
-  fetchStellarObject,
-  parseStellarObjectInput
+  buildSystemContext,
+  buildTransitData,
+  fetchStarSystem,
+  findMainWorld,
+  normalizeBodyPayload,
+  parseStarSystemInput,
 } from "./mtu-api.js";
 
 function isV13Plus() {
@@ -61,6 +66,16 @@ Hooks.once("init", () => {
     config: true,
     type: String,
     default: "",
+    restricted: true
+  });
+
+  game.settings.register(MODULE_ID, "mDrive", {
+    name: "MTU.settings.mDrive.name",
+    hint: "MTU.settings.mDrive.hint",
+    scope: "world",
+    config: false,
+    type: Number,
+    default: 1,
     restricted: true
   });
 
@@ -433,15 +448,38 @@ Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
 /* Rendering and refresh logic      */
 /* -------------------------------- */
 
-async function renderMtuContent(mode, payload) {
-  const data = mode === "gm" ? buildGmData(payload) : buildPlayerData(payload);
-  return renderTemplate(`modules/${MODULE_ID}/templates/mtu-${mode}.html`, data);
+async function renderMtuContent(mode, system) {
+  switch (mode) {
+    case "overview":
+      return renderTemplate(`modules/${MODULE_ID}/templates/mtu-overview.html`, buildOverviewData(system));
+
+    case "transit": {
+      const mDrive = game.settings.get(MODULE_ID, "mDrive") ?? 1;
+      return renderTemplate(`modules/${MODULE_ID}/templates/mtu-transit.html`, buildTransitData(system, mDrive));
+    }
+
+    default: {
+      const mainWorld = findMainWorld(system);
+      if (!mainWorld) {
+        return `<p>${game.i18n.localize("MTU.notify.noMainWorld")}</p>`;
+      }
+      const ctx = buildSystemContext(system);
+      const star = system.primary_star ?? {};
+      const mainWorldCtx = {
+        ...ctx,
+        orbiting_name: `${star.stellar_type ?? ""}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim() || "—",
+      };
+      const normalizedBody = normalizeBodyPayload(mainWorld, mainWorldCtx);
+      const data = mode === "gm" ? buildGmData(normalizedBody) : buildPlayerData(normalizedBody);
+      return renderTemplate(`modules/${MODULE_ID}/templates/mtu-${mode}.html`, data);
+    }
+  }
 }
 
 async function refreshMtuPage(page, app) {
   const campaignSlug = page.getFlag(MODULE_ID, "campaignSlug");
-  const resourceId = page.getFlag(MODULE_ID, "resourceId");
-  const mode = page.getFlag(MODULE_ID, "mode");
+  const resourceId   = page.getFlag(MODULE_ID, "resourceId");
+  const mode         = page.getFlag(MODULE_ID, "mode");
 
   if (!campaignSlug || !resourceId || !mode) {
     ui.notifications.error(game.i18n.localize("MTU.notify.pageMissingMetadata"));
@@ -449,12 +487,12 @@ async function refreshMtuPage(page, app) {
   }
 
   try {
-    const payload = await fetchStellarObject(campaignSlug, resourceId);
-    const content = await renderMtuContent(mode, payload);
+    const system  = await fetchStarSystem(campaignSlug, resourceId);
+    const content = await renderMtuContent(mode, system);
 
     await page.update({
       "text.content": content,
-      "text.format": CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
+      "text.format":  CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
     });
 
     app?.render(true);
@@ -467,7 +505,7 @@ async function refreshMtuPage(page, app) {
 
 async function refreshMtuJournalEntry(entry) {
   const campaignSlug = getEntryCampaignSlug(entry);
-  const resourceId = getEntryResourceId(entry);
+  const resourceId   = getEntryResourceId(entry);
 
   if (!campaignSlug || !resourceId) {
     ui.notifications.error(game.i18n.localize("MTU.notify.entryMissingMetadata"));
@@ -475,12 +513,8 @@ async function refreshMtuJournalEntry(entry) {
   }
 
   try {
-    const payload = await fetchStellarObject(campaignSlug, resourceId);
-    await updateMtuJournalPages(entry, payload, {
-      campaignSlug,
-      resourceId,
-      updateSystemMap: false
-    });
+    const system = await fetchStarSystem(campaignSlug, resourceId);
+    await updateMtuJournalPages(entry, system, { campaignSlug, resourceId, updateSystemMap: false });
 
     entry.sheet?.render(true);
     ui.notifications.info(game.i18n.format("MTU.notify.entryRefreshed", { name: entry.name }));
@@ -517,7 +551,7 @@ async function editMtuJournalEntryId(entry) {
 
           if (!/^\d+$/.test(raw)) {
             try {
-              const parsed = parseStellarObjectInput(raw, newCampaignSlug);
+              const parsed = parseStarSystemInput(raw, newCampaignSlug);
               newResourceId = parsed.resourceId;
               newCampaignSlug = parsed.campaignSlug;
             } catch (err) {
@@ -527,14 +561,14 @@ async function editMtuJournalEntryId(entry) {
           }
 
           try {
-            const payload = await fetchStellarObject(newCampaignSlug, newResourceId);
+            const system = await fetchStarSystem(newCampaignSlug, newResourceId);
 
             await entry.setFlag(MODULE_ID, "resourceId", newResourceId);
             await entry.setFlag(MODULE_ID, "campaignSlug", newCampaignSlug);
 
-            await updateMtuJournalPages(entry, payload, {
+            await updateMtuJournalPages(entry, system, {
               campaignSlug: newCampaignSlug,
-              resourceId: newResourceId,
+              resourceId:   newResourceId,
               updateSystemMap: true
             });
 
@@ -555,46 +589,27 @@ async function editMtuJournalEntryId(entry) {
   }).render(true);
 }
 
-async function updateMtuJournalPages(entry, payload, { campaignSlug, resourceId, updateSystemMap }) {
+async function updateMtuJournalPages(entry, system, { campaignSlug, resourceId, updateSystemMap }) {
   const updates = [];
 
-  const playerPage = findMtuTextPage(entry, "player");
-  if (playerPage) {
-    const playerHtml = await renderMtuContent("player", payload);
-    updates.push({
-      _id: playerPage.id,
-      text: {
-        content: playerHtml,
-        format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
-      },
-      flags: {
-        [MODULE_ID]: {
-          ...playerPage.getFlag(MODULE_ID),
-          live: true,
-          mode: "player",
-          resourceId,
-          campaignSlug
-        }
-      }
-    });
-  }
+  for (const mode of ["overview", "player", "gm", "transit"]) {
+    const page = findMtuTextPage(entry, mode);
+    if (!page) continue;
 
-  const gmPage = findMtuTextPage(entry, "gm");
-  if (gmPage) {
-    const gmHtml = await renderMtuContent("gm", payload);
+    const content = await renderMtuContent(mode, system);
     updates.push({
-      _id: gmPage.id,
+      _id: page.id,
       text: {
-        content: gmHtml,
+        content,
         format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
       },
       flags: {
         [MODULE_ID]: {
-          ...gmPage.getFlag(MODULE_ID),
+          ...page.getFlag(MODULE_ID),
           live: true,
-          mode: "gm",
+          mode,
           resourceId,
-          campaignSlug
+          campaignSlug,
         }
       }
     });
@@ -602,10 +617,10 @@ async function updateMtuJournalPages(entry, payload, { campaignSlug, resourceId,
 
   if (updateSystemMap) {
     const systemMapPage = findSystemMapPage(entry);
-    if (systemMapPage && payload.star_system_map_url) {
+    if (systemMapPage && system.star_system_map_url) {
       updates.push({
         _id: systemMapPage.id,
-        src: payload.star_system_map_url
+        src: system.star_system_map_url
       });
     }
   }

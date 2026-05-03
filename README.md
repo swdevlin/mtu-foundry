@@ -1,6 +1,6 @@
 # MTU Journals
 
-A Foundry VTT v12 module for importing MyTravellerUniverse object URLs into journals.
+A Foundry VTT v12-13 module for importing MyTravellerUniverse data into Foundry journals.
 
 ## What it does
 
