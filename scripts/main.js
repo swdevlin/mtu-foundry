@@ -403,8 +403,10 @@ Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
 
 async function renderMtuContent(mode, system) {
   switch (mode) {
-    case "overview":
-      return renderTemplate(`modules/${MODULE_ID}/templates/mtu-overview.html`, buildOverviewData(system));
+    case "overview": {
+      const mDrive = game.settings.get(MODULE_ID, "mDrive") ?? 1;
+      return renderTemplate(`modules/${MODULE_ID}/templates/mtu-overview.html`, buildOverviewData(system, mDrive));
+    }
 
     case "transit": {
       const mDrive = game.settings.get(MODULE_ID, "mDrive") ?? 1;

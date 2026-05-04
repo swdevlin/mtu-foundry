@@ -203,7 +203,7 @@ function findBestRefuelGasGiant(system) {
   return best;
 }
 
-export function buildOverviewData(system) {
+export function buildOverviewData(system, mDrive = 1) {
   const ctx = buildSystemContext(system);
   const star = system.primary_star ?? {};
   const primaryStar = star.stellar_type
@@ -226,7 +226,7 @@ export function buildOverviewData(system) {
       terrestrial: system.terrestrial_count ?? 0,
       belts:       system.belt_count ?? 0,
     },
-    bodies: buildBodyList(system),
+    bodies: buildBodyList(system, mDrive),
     gasGiantJumpShadow: gg ? {
       label:      [gg.orbit_sequence, gg.name].filter(Boolean).join(" — "),
       safeJumpKm: Number(gg.jump_shadow).toLocaleString(),
@@ -238,15 +238,22 @@ export function buildOverviewData(system) {
   };
 }
 
-function buildBodyList(system) {
-  return (system.primary_star?.stellar_objects ?? []).map((body) => ({
-    label:    body.orbit_sequence ?? "—",
-    type:     humaniseType(body.type ?? ""),
-    uwp:      body.uwp ?? null,
-    orbit:    body.au != null ? `${Number(body.au).toFixed(3)} AU` : "—",
-    moons:    body.moons?.length ?? 0,
-    safeJump: body.safe_jump_time ?? "—",
-  }));
+function buildBodyList(system, mDrive) {
+  return (system.primary_star?.stellar_objects ?? []).map((body) => {
+    const js = body.jump_shadow;
+    const km = typeof js === "number" ? js : (js?.distance_km ?? null);
+    const safeJump = km != null && km > 0
+      ? formatJumpShadowTime(calcTransitHours(km, mDrive))
+      : "—";
+    return {
+      label:    body.orbit_sequence ?? "—",
+      type:     humaniseType(body.type ?? ""),
+      uwp:      body.uwp ?? null,
+      orbit:    body.au != null ? `${Number(body.au).toFixed(2)}` : "—",
+      moons:    body.moons?.length ?? 0,
+      safeJump,
+    };
+  });
 }
 
 /* ── Transit page data ──────────────────────────────────────── */
@@ -336,7 +343,9 @@ export function buildPlayerData(payload) {
     name: payload.name,
     type: humaniseType(payload.type ?? ""),
     profile: [
-      { label: "MTU.label.uwp",          value: payload.uwp ?? "—" },
+      { label: "MTU.label.name",          value: payload.name ?? "" },
+      { label: "MTU.label.type",          value: humaniseType(payload.type ?? "") },
+      { label: "MTU.label.uwp",           value: payload.uwp ?? "—" },
       { label: "MTU.label.starport",      value: starportValue },
       { label: "MTU.label.gravity",       value: `${fmt(payload.gravity)} g` },
       { label: "MTU.label.temperature",   value: `${Math.round(payload.temperature - 273.15)}°C` },

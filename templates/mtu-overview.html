@@ -2,13 +2,13 @@
   <h2>{{localize "MTU.section.systemSummary"}}</h2>
   <table>
     <tbody>
-      <tr><th>{{localize "MTU.label.sector"}}</th>        <td>{{sector}}</td></tr>
-      <tr><th>{{localize "MTU.label.subsector"}}</th>     <td>{{subsector}}</td></tr>
-      <tr><th>{{localize "MTU.label.primaryStar"}}</th>   <td>{{primaryStar}}</td></tr>
-      <tr><th>{{localize "MTU.label.mainWorld"}}</th>     <td>{{mainWorldName}}</td></tr>
-      <tr><th>{{localize "MTU.label.mainWorldUwp"}}</th>  <td>{{mainWorldUwp}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.label.sector"}}</th>        <td>{{sector}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.label.subsector"}}</th>     <td>{{subsector}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.label.primaryStar"}}</th>   <td>{{primaryStar}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.label.mainWorld"}}</th>     <td>{{mainWorldName}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.label.mainWorldUwp"}}</th>  <td>{{mainWorldUwp}}</td></tr>
       {{#if remarks}}
-      <tr><th>{{localize "MTU.label.remarks"}}</th>       <td>{{remarks}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.label.remarks"}}</th>       <td>{{remarks}}</td></tr>
       {{/if}}
     </tbody>
   </table>
@@ -17,18 +17,18 @@
   <table>
     <thead>
       <tr>
-        <th>{{localize "MTU.label.stars"}}</th>
-        <th>{{localize "MTU.label.gasGiants"}}</th>
-        <th>{{localize "MTU.label.terrestrial"}}</th>
-        <th>{{localize "MTU.label.belts"}}</th>
+        <th class="mtu-center">{{localize "MTU.label.stars"}}</th>
+        <th class="mtu-center">{{localize "MTU.label.gasGiants"}}</th>
+        <th class="mtu-center">{{localize "MTU.label.terrestrial"}}</th>
+        <th class="mtu-center">{{localize "MTU.label.belts"}}</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>{{counts.stars}}</td>
-        <td>{{counts.gasGiants}}</td>
-        <td>{{counts.terrestrial}}</td>
-        <td>{{counts.belts}}</td>
+        <td class="mtu-center">{{counts.stars}}</td>
+        <td class="mtu-center">{{counts.gasGiants}}</td>
+        <td class="mtu-center">{{counts.terrestrial}}</td>
+        <td class="mtu-center">{{counts.belts}}</td>
       </tr>
     </tbody>
   </table>
@@ -37,21 +37,21 @@
   <table>
     <thead>
       <tr>
-        <th>{{localize "MTU.label.orbit"}}</th>
-        <th>{{localize "MTU.label.type"}}</th>
-        <th>{{localize "MTU.label.uwp"}}</th>
-        <th>{{localize "MTU.label.au"}}</th>
-        <th>{{localize "MTU.label.safeJump"}}</th>
+        <th class="mtu-center">{{localize "MTU.label.orbit"}}</th>
+        <th class="mtu-left">{{localize "MTU.label.type"}}</th>
+        <th class="mtu-left">{{localize "MTU.label.uwp"}}</th>
+        <th class="mtu-right">{{localize "MTU.label.au"}}</th>
+        <th class="mtu-right">{{localize "MTU.label.safeJump"}}</th>
       </tr>
     </thead>
     <tbody>
       {{#each bodies}}
       <tr>
-        <th>{{label}}</th>
+        <td class="mtu-center">{{label}}</td>
         <td>{{type}}</td>
         <td>{{#if uwp}}{{uwp}}{{else}}—{{/if}}</td>
-        <td>{{orbit}}</td>
-        <td>{{safeJump}}</td>
+        <td class="mtu-right">{{orbit}}</td>
+        <td class="mtu-right">{{safeJump}}</td>
       </tr>
       {{/each}}
     </tbody>
@@ -71,7 +71,7 @@
     <tbody>
       <tr>
         {{#each gasGiantJumpShadow.times}}
-        <td>{{this.value}}</td>
+        <td class="mtu-center">{{this.value}}</td>
         {{/each}}
       </tr>
     </tbody>

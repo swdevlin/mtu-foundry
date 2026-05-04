@@ -123,7 +123,7 @@
       "systemSummary":  "System Summary",
       "systemContents": "System Contents",
       "systemBodies":   "System Bodies",
-      "gasGiantRefuel": "Best Gas Giant for Wilderness Refueling"
+      "gasGiantRefuel": "Wilderness Refueling"
     },
     "location": {
       "orbiting": "Orbiting",
@@ -148,6 +148,8 @@
       "unnamed": "(unnamed)"
     },
     "label": {
+      "name": "Name",
+      "type": "Type",
       "uwp": "UWP",
       "starport": "Starport",
       "gravity": "Gravity",
