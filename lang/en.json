@@ -145,7 +145,10 @@
       "yes": "Yes",
       "no": "No",
       "none": "None",
-      "unnamed": "(unnamed)"
+      "unnamed": "(unnamed)",
+      "ggSmall": "Small",
+      "ggMedium": "Medium",
+      "ggLarge": "Large"
     },
     "label": {
       "name": "Name",
@@ -252,9 +255,9 @@
       "gasGiants":    "Gas Giants",
       "terrestrial":  "Terrestrial",
       "belts":        "Belts",
-      "type":         "Type",
       "moons":        "Moons",
-      "safeJump":     "Safe Jump"
+      "safeJump":     "Safe Jump",
+      "uwpSam":       "UWP/SAM"
     }
   }
 }

@@ -38,8 +38,7 @@
     <thead>
       <tr>
         <th class="mtu-center">{{localize "MTU.label.orbit"}}</th>
-        <th class="mtu-left">{{localize "MTU.label.type"}}</th>
-        <th class="mtu-left">{{localize "MTU.label.uwp"}}</th>
+        <th class="mtu-left">{{localize "MTU.label.uwpSam"}}</th>
         <th class="mtu-right">{{localize "MTU.label.au"}}</th>
         <th class="mtu-right">{{localize "MTU.label.safeJump"}}</th>
       </tr>
@@ -48,8 +47,7 @@
       {{#each bodies}}
       <tr>
         <td class="mtu-center">{{label}}</td>
-        <td>{{type}}</td>
-        <td>{{#if uwp}}{{uwp}}{{else}}—{{/if}}</td>
+        <td>{{uwpSam}}</td>
         <td class="mtu-right">{{orbit}}</td>
         <td class="mtu-right">{{safeJump}}</td>
       </tr>
@@ -64,7 +62,7 @@
     <thead>
       <tr>
         {{#each gasGiantJumpShadow.times}}
-        <th>{{this.g}}</th>
+        <th class="mtu-center">{{this.g}}</th>
         {{/each}}
       </tr>
     </thead>

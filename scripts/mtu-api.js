@@ -245,10 +245,13 @@ function buildBodyList(system, mDrive) {
     const safeJump = km != null && km > 0
       ? formatJumpShadowTime(calcTransitHours(km, mDrive))
       : "—";
+    const ggKey = GAS_GIANT_SIZE[body.code];
+    const uwpSam = body.uwp
+      ? body.uwp
+      : ggKey ? game.i18n.localize(ggKey) : "—";
     return {
       label:    body.orbit_sequence ?? "—",
-      type:     humaniseType(body.type ?? ""),
-      uwp:      body.uwp ?? null,
+      uwpSam,
       orbit:    body.au != null ? `${Number(body.au).toFixed(2)}` : "—",
       moons:    body.moons?.length ?? 0,
       safeJump,
@@ -280,12 +283,9 @@ export function buildTransitData(system, mDrive) {
   const nodes = [{ label: starLabel, x: 0, y: 0 }];
 
   for (const body of star.stellar_objects ?? []) {
+    if (body.type === "Planetoid") continue;
     const pos = body.orbit_position ?? {};
     nodes.push({ label: body.orbit_sequence ?? "—", x: pos.x ?? 0, y: pos.y ?? 0 });
-    for (const moon of body.moons ?? []) {
-      const mpos = moon.orbit_position ?? {};
-      nodes.push({ label: moon.orbit_sequence ?? "—", x: mpos.x ?? 0, y: mpos.y ?? 0 });
-    }
   }
 
   const rows = nodes.map((from, i) => ({
@@ -312,6 +312,12 @@ export function formatJumpShadowTime(hours) {
 function humaniseType(type) {
   return type.replace(/([A-Z])/g, " $1").trim();
 }
+
+const GAS_GIANT_SIZE = {
+  GS: "MTU.value.ggSmall",
+  GM: "MTU.value.ggMedium",
+  GL: "MTU.value.ggLarge",
+};
 
 function fmt(n, decimals = 2) {
   return Number(n).toFixed(decimals);
