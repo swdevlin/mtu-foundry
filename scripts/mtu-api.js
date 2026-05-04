@@ -239,7 +239,9 @@ export function buildOverviewData(system, mDrive = 1) {
 }
 
 function buildBodyList(system, mDrive) {
-  return (system.primary_star?.stellar_objects ?? []).map((body) => {
+  return (system.primary_star?.stellar_objects ?? [])
+    .filter((body) => body.type !== "Moon" && body.type !== "Planetoid")
+    .map((body) => {
     const js = body.jump_shadow;
     const km = typeof js === "number" ? js : (js?.distance_km ?? null);
     const safeJump = km != null && km > 0
