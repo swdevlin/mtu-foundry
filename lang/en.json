@@ -146,9 +146,9 @@
       "no": "No",
       "none": "None",
       "unnamed": "(unnamed)",
-      "ggSmall": "Small",
-      "ggMedium": "Medium",
-      "ggLarge": "Large"
+      "ggSmall": "Small Gas Giant",
+      "ggMedium": "Medium Gas Giant",
+      "ggLarge": "Large Gas Giant"
     },
     "label": {
       "name": "Name",

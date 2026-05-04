@@ -1,41 +1,43 @@
-<h2>{{localize "MTU.section.planetaryProfile"}}</h2>
-<table>
-  <tbody>
-    {{#each profile}}
-    <tr>
-      <th class="mtu-left">{{localize this.label}}</th>
-      <td>{{this.value}}</td>
-    </tr>
-    {{/each}}
-  </tbody>
-</table>
-
-{{#if jumpShadow}}
-<h2>{{localize "MTU.section.jumpShadowTimes"}}</h2>
-<table>
-  <thead>
-    <tr>
-      {{#each jumpShadow}}
-      <th class="mtu-center">{{this.g}}</th>
+<div>
+  <h2>{{localize "MTU.section.planetaryProfile"}}</h2>
+  <table class="mtu-no-borders">
+    <tbody>
+      {{#each profile}}
+      <tr>
+        <th class="mtu-left">{{localize this.label}}</th>
+        <td>{{this.value}}</td>
+      </tr>
       {{/each}}
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      {{#each jumpShadow}}
-      <td class="mtu-center">{{this.value}}</td>
-      {{/each}}
-    </tr>
-  </tbody>
-</table>
-{{/if}}
+    </tbody>
+  </table>
 
-<h2>{{localize "MTU.section.location"}}</h2>
-<table>
-  <tbody>
-    <tr><th class="mtu-left">{{localize "MTU.location.orbiting"}}</th>   <td>{{location.orbiting}}</td></tr>
-    <tr><th class="mtu-left">{{localize "MTU.location.starSystem"}}</th>  <td>{{location.starSystem}}</td></tr>
-    <tr><th class="mtu-left">{{localize "MTU.location.subsector"}}</th>   <td>{{location.subsector}}</td></tr>
-    <tr><th class="mtu-left">{{localize "MTU.location.sector"}}</th>      <td>{{location.sector}}</td></tr>
-  </tbody>
-</table>
+  {{#if jumpShadow}}
+  <h2>{{localize "MTU.section.jumpShadowTimes"}}</h2>
+  <table class="mtu-no-borders">
+    <thead>
+      <tr>
+        {{#each jumpShadow}}
+        <th class="mtu-center">{{this.g}}</th>
+        {{/each}}
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        {{#each jumpShadow}}
+        <td class="mtu-center">{{this.value}}</td>
+        {{/each}}
+      </tr>
+    </tbody>
+  </table>
+  {{/if}}
+
+  <h2>{{localize "MTU.section.location"}}</h2>
+  <table class="mtu-no-borders">
+    <tbody>
+      <tr><th class="mtu-left">{{localize "MTU.location.orbiting"}}</th>   <td>{{location.orbiting}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.location.starSystem"}}</th>  <td>{{location.starSystem}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.location.subsector"}}</th>   <td>{{location.subsector}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.location.sector"}}</th>      <td>{{location.sector}}</td></tr>
+    </tbody>
+  </table>
+</div>

@@ -38,6 +38,12 @@
 .mtu-right { text-align: right; }
 .mtu-center { text-align: center; }
 
+.mtu-no-borders,
+.mtu-no-borders th,
+.mtu-no-borders td {
+  border: none;
+}
+
 /* ── Transit table ──────────────────────────────────────────── */
 
 .mtu-transit-scroll {

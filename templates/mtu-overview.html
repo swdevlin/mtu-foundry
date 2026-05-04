@@ -1,6 +1,6 @@
 <div>
   <h2>{{localize "MTU.section.systemSummary"}}</h2>
-  <table>
+  <table class="mtu-no-borders">
     <tbody>
       <tr><th class="mtu-left">{{localize "MTU.label.sector"}}</th>        <td>{{sector}}</td></tr>
       <tr><th class="mtu-left">{{localize "MTU.label.subsector"}}</th>     <td>{{subsector}}</td></tr>
@@ -14,7 +14,7 @@
   </table>
 
   <h2>{{localize "MTU.section.systemContents"}}</h2>
-  <table>
+  <table class="mtu-no-borders">
     <thead>
       <tr>
         <th class="mtu-center">{{localize "MTU.label.stars"}}</th>
@@ -34,7 +34,7 @@
   </table>
 
   <h2>{{localize "MTU.section.systemBodies"}}</h2>
-  <table>
+  <table class="mtu-no-borders">
     <thead>
       <tr>
         <th class="mtu-center">{{localize "MTU.label.orbit"}}</th>
@@ -58,7 +58,7 @@
   {{#if gasGiantJumpShadow}}
   <h2>{{localize "MTU.section.gasGiantRefuel"}}</h2>
   <p><em>{{gasGiantJumpShadow.label}} · {{gasGiantJumpShadow.safeJumpKm}} km to safe jump</em></p>
-  <table>
+  <table class="mtu-no-borders">
     <thead>
       <tr>
         {{#each gasGiantJumpShadow.times}}
