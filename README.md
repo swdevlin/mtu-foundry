@@ -1,7 +1,7 @@
 # My Traveller Universe (MTU)
 
 [![Foundry v12+](https://img.shields.io/badge/foundry-v12%2B-informational)](#compatibility)
-[![Verified v13](https://img.shields.io/badge/foundry-v13-verified-success)](#compatibility)
+[![Verified](https://img.shields.io/badge/verified-v13-brightgreen)](#compatibility)
 [![Version](https://img.shields.io/github/v/release/swdevlin/mtu-foundry)](https://github.com/swdevlin/mtu-foundry/releases)
 [![License](https://img.shields.io/github/license/swdevlin/mtu-foundry)](LICENSE)
 
