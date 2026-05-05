@@ -166,7 +166,8 @@ export class MtuImportDialog extends FormApplication {
 
     if (mainWorldBody) {
       const mainWorldCtx = { ...ctx, orbiting_name: buildStarLabel(system.primary_star) };
-      const normalizedBody = normalizeBodyPayload(mainWorldBody, mainWorldCtx);
+      const bodyWithName = mainWorldBody.name ? mainWorldBody : { ...mainWorldBody, name: system.main_world?.name ?? null };
+      const normalizedBody = normalizeBodyPayload(bodyWithName, mainWorldCtx);
 
       if (pageOptions.createPlayerPage) {
         const html = await renderTemplate(

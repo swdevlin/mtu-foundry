@@ -214,6 +214,12 @@ function findBestRefuelGasGiant(system) {
   return best;
 }
 
+function resolveSubsectorName(subsectorName, sectorName, subsectorLetter) {
+  return (subsectorName && subsectorName !== "—")
+    ? subsectorName
+    : `${sectorName ?? "—"} ${subsectorLetter}`;
+}
+
 export function buildOverviewData(system, mDrive = 1) {
   const ctx = buildSystemContext(system);
   const star = system.primary_star ?? {};
@@ -226,7 +232,7 @@ export function buildOverviewData(system, mDrive = 1) {
   return {
     systemName:    ctx.star_system_name,
     sector:        ctx.sector_name,
-    subsector:     ctx.subsector_name,
+    subsector:     resolveSubsectorName(ctx.subsector_name, ctx.sector_name, ctx.subsector_letter),
     remarks:       system.remarks ?? "",
     mainWorldUwp:  system.main_world?.uwp ?? "—",
     mainWorldName: system.main_world?.name || game.i18n.localize("MTU.value.unnamed"),
@@ -379,9 +385,7 @@ export function buildPlayerData(payload) {
     location: {
       orbiting:   payload.orbiting_name ?? "—",
       starSystem: payload.star_system_name ?? "—",
-      subsector:  (payload.subsector_name && payload.subsector_name !== "—")
-        ? payload.subsector_name
-        : `${payload.sector_name ?? "—"} ${payload.subsector_letter}`,
+      subsector:  resolveSubsectorName(payload.subsector_name, payload.sector_name, payload.subsector_letter),
       sector:     `${payload.sector_name ?? "—"}`,
     },
   };
