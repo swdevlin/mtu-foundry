@@ -185,7 +185,7 @@ export class MtuImportDialog extends FormApplication {
       if (pageOptions.createGmPage) {
         const html = await renderTemplate(
           `modules/${MODULE_ID}/templates/mtu-gm.html`,
-          buildGmData(normalizedBody)
+          buildGmData(normalizedBody, campaignSlug)
         );
         pages.push({
           name: game.i18n.localize("MTU.page.mainWorldGm"),

@@ -107,13 +107,20 @@ export async function fetchSubsector(campaignSlug, resourceId) {
 /* ── System context & normalization ────────────────────────── */
 
 export function buildSystemContext(system) {
-  const hex = String(system.x ?? 0).padStart(2, "0") + String(system.y ?? 0).padStart(2, "0");
+  const x = system.x ?? 0;
+  const y = system.y ?? 0;
+  const hex = String(x).padStart(2, "0") + String(y).padStart(2, "0");
   const sectorName = system.sector_name ?? "—";
+  const subsector_letter = String.fromCharCode(65 + Math.floor((x - 1) / 8) + Math.floor((y - 1) / 10) * 4);
   return {
     sector_name:      sectorName,
+    sector_id:        system.sector_id ?? null,
     hex,
     star_system_name: system.name || `${sectorName} ${hex}`.trim() || `System ${system.id}`,
+    star_system_id:   system.id ?? null,
     subsector_name:   system.subsector_name ?? "—",
+    subsector_id:     system.subsector_id ?? null,
+    subsector_letter,
   };
 }
 
@@ -167,9 +174,13 @@ export function normalizeBodyPayload(body, systemContext) {
     economics:   null,
 
     sector_name:      systemContext.sector_name,
+    sector_id:        systemContext.sector_id,
     hex:              systemContext.hex,
     star_system_name: systemContext.star_system_name,
+    star_system_id:   systemContext.star_system_id,
     subsector_name:   systemContext.subsector_name ?? "—",
+    subsector_id:     systemContext.subsector_id,
+    subsector_letter: systemContext.subsector_letter,
     orbiting_name:    systemContext.orbiting_name ?? "—",
   };
 }
@@ -214,7 +225,7 @@ export function buildOverviewData(system, mDrive = 1) {
 
   return {
     systemName:    ctx.star_system_name,
-    sector:        `${ctx.sector_name} · ${ctx.hex}`,
+    sector:        ctx.sector_name,
     subsector:     ctx.subsector_name,
     remarks:       system.remarks ?? "",
     mainWorldUwp:  system.main_world?.uwp ?? "—",
@@ -368,21 +379,29 @@ export function buildPlayerData(payload) {
     location: {
       orbiting:   payload.orbiting_name ?? "—",
       starSystem: payload.star_system_name ?? "—",
-      subsector:  payload.subsector_name ?? "—",
-      sector:     `${payload.sector_name ?? "—"} · ${payload.hex ?? ""}`,
+      subsector:  (payload.subsector_name && payload.subsector_name !== "—")
+        ? payload.subsector_name
+        : `${payload.sector_name ?? "—"} ${payload.subsector_letter}`,
+      sector:     `${payload.sector_name ?? "—"}`,
     },
   };
 }
 
-export function buildGmData(payload) {
+export function buildGmData(payload, campaignSlug) {
   const player = buildPlayerData(payload);
   const js = payload.jump_shadow;
   const jsKm = typeof js === "number" ? js : (js?.distance_km ?? null);
   const eco = payload.economics ?? {};
   const tl = TECH_LEVEL[payload.tech_level_code] ?? {};
 
+  const base = campaignSlug ? `https://mytravelleruniverse.net/c/${campaignSlug}` : null;
+  const starSystemUrl = base && payload.star_system_id ? `${base}/star_systems/${payload.star_system_id}` : null;
+  const subsectorUrl  = base && payload.subsector_id   ? `${base}/subsectors/${payload.subsector_id}`    : null;
+  const sectorUrl     = base && payload.sector_id      ? `${base}/sectors/${payload.sector_id}`          : null;
+
   return {
     ...player,
+    location: { ...player.location, starSystemUrl, subsectorUrl, sectorUrl },
 
     orbital: [
       { label: "MTU.label.hex",          value: payload.hex ?? "—" },

@@ -401,7 +401,7 @@ Hooks.on("getJournalDirectoryEntryContext", (_html, options) => {
 /* Rendering and refresh logic      */
 /* -------------------------------- */
 
-async function renderMtuContent(mode, system) {
+async function renderMtuContent(mode, system, campaignSlug) {
   switch (mode) {
     case "overview": {
       const mDrive = game.settings.get(MODULE_ID, "mDrive") ?? 1;
@@ -425,7 +425,7 @@ async function renderMtuContent(mode, system) {
         orbiting_name: `${star.stellar_type ?? ""}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim() || "—",
       };
       const normalizedBody = normalizeBodyPayload(mainWorld, mainWorldCtx);
-      const data = mode === "gm" ? buildGmData(normalizedBody) : buildPlayerData(normalizedBody);
+      const data = mode === "gm" ? buildGmData(normalizedBody, campaignSlug) : buildPlayerData(normalizedBody);
       return renderTemplate(`modules/${MODULE_ID}/templates/mtu-${mode}.html`, data);
     }
   }
@@ -443,7 +443,7 @@ async function refreshMtuPage(page, app) {
 
   try {
     const system  = await fetchStarSystem(campaignSlug, resourceId);
-    const content = await renderMtuContent(mode, system);
+    const content = await renderMtuContent(mode, system, campaignSlug);
 
     await page.update({
       "text.content": content,
@@ -486,7 +486,7 @@ async function updateMtuJournalPages(entry, system, { campaignSlug, resourceId, 
     const page = findMtuTextPage(entry, mode);
     if (!page) continue;
 
-    const content = await renderMtuContent(mode, system);
+    const content = await renderMtuContent(mode, system, campaignSlug);
     updates.push({
       _id: page.id,
       text: {

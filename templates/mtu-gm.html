@@ -35,9 +35,9 @@
   <table class="mtu-no-borders">
     <tbody>
       <tr><th class="mtu-left">{{localize "MTU.location.orbiting"}}</th>   <td>{{location.orbiting}}</td></tr>
-      <tr><th class="mtu-left">{{localize "MTU.location.starSystem"}}</th>  <td>{{location.starSystem}}</td></tr>
-      <tr><th class="mtu-left">{{localize "MTU.location.subsector"}}</th>   <td>{{location.subsector}}</td></tr>
-      <tr><th class="mtu-left">{{localize "MTU.location.sector"}}</th>      <td>{{location.sector}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.location.starSystem"}}</th>  <td>{{#if location.starSystemUrl}}<a href="{{location.starSystemUrl}}" target="_blank">{{location.starSystem}}</a>{{else}}{{location.starSystem}}{{/if}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.location.subsector"}}</th>   <td>{{#if location.subsectorUrl}}<a href="{{location.subsectorUrl}}" target="_blank">{{location.subsector}}</a>{{else}}{{location.subsector}}{{/if}}</td></tr>
+      <tr><th class="mtu-left">{{localize "MTU.location.sector"}}</th>      <td>{{#if location.sectorUrl}}<a href="{{location.sectorUrl}}" target="_blank">{{location.sector}}</a>{{else}}{{location.sector}}{{/if}}</td></tr>
     </tbody>
   </table>
 
