@@ -89,6 +89,18 @@
     </tbody>
   </table>
 
+  <h2>{{localize "MTU.section.economics"}}</h2>
+  <table class="mtu-no-borders">
+    <tbody>
+      {{#each economics}}
+      <tr>
+        <th class="mtu-left">{{localize this.label}}</th>
+        <td>{{this.value}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
   <h2>{{localize "MTU.section.physicalData"}}</h2>
   <table class="mtu-no-borders">
     <tbody>

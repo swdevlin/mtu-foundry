@@ -14,7 +14,6 @@ import {
   POPULATION_CONCENTRATION,
   RESOURCE_RATING,
   STARPORT,
-  TECH_LEVEL,
 } from "./mtu-lookups.js";
 
 const MODULE_ID = "my-traveller-universe";
@@ -124,22 +123,23 @@ export function buildSystemContext(system) {
   };
 }
 
-// Maps a stellar body embedded in a star system response to the flat shape
-// expected by buildPlayerData / buildGmData.
 export function normalizeBodyPayload(body, systemContext) {
   return {
-    name:             body.name ?? null,
-    type:             body.type ?? "",
-    uwp:              body.uwp ?? "—",
-    starport_code:    body.starport_code ?? "X",
-    size_code:        body.size ?? "—",
-    tech_level_code:  body.tech_level?.code ?? 0,
+    name:            body.name ?? null,
+    type:            body.type ?? "",
+    uwp:             body.uwp ?? "—",
+    // starport.code takes precedence over the flat starport_code field
+    starport_code:   body.starport?.code ?? body.starport_code ?? null,
+    size_code:       body.size?.code ?? body.size ?? "—",
 
+    // Pass through as objects
     atmosphere:    body.atmosphere ?? {},
     population:    body.population ?? {},
     government:    body.government ?? {},
     law_level:     body.law_level ?? {},
     hydrographics: body.hydrographics ?? {},
+    starport:      body.starport ?? {},
+    tech_level:    body.tech_level ?? {},
 
     gravity:       body.gravity ?? 0,
     temperature:   body.temperature ?? 273.15,
@@ -152,18 +152,20 @@ export function normalizeBodyPayload(body, systemContext) {
     greenhouse:    body.greenhouse ?? null,
     retrograde:    body.retrograde ?? false,
     tidal_lock:    body.tidal_lock ?? null,
+    tidal_lock_note: body.tidal_lock_note ?? null,
     twilight_zone: body.twilight_zone ?? false,
     eccentricity:  body.eccentricity ?? null,
     inclination:   body.inclination ?? null,
     sidereal_day:  body.sidereal_day ?? null,
 
-    native_sophont:       body.native_sophont ?? false,
-    extinct_sophont:      body.extinct_sophont ?? false,
+    // Top-level fields still present; also pull from nested population.biological_data if available
+    native_sophont:       body.native_sophont ?? body.population?.native_sophont?.value ?? false,
+    extinct_sophont:      body.extinct_sophont ?? body.population?.extinct_sophont?.value ?? false,
     habitability_rating:  body.habitability_rating ?? null,
-    biomass_rating:       body.biomass_rating ?? null,
-    biodiversity_rating:  body.biodiversity_rating ?? null,
-    biocomplexity_rating: body.biocomplexity_rating ?? null,
-    resource_rating:      body.resource_rating ?? null,
+    biomass_rating:       body.biomass_rating ?? body.population?.biological_data?.biomass_rating?.value ?? null,
+    biodiversity_rating:  body.biodiversity_rating ?? body.population?.biological_data?.biodiversity_rating?.code ?? null,
+    biocomplexity_rating: body.biocomplexity_rating ?? body.population?.biological_data?.biocomplexity_rating?.code ?? null,
+    resource_rating:      body.resource_rating ?? body.population?.biological_data?.resource_rating?.code ?? null,
 
     orbit:                    body.orbit ?? null,
     au:                       body.au ?? null,
@@ -171,7 +173,7 @@ export function normalizeBodyPayload(body, systemContext) {
     effective_hzco_deviation: body.effective_hzco_deviation ?? null,
 
     jump_shadow: body.jump_shadow ?? null,
-    economics:   null,
+    economics:   body.economics ?? null,
 
     sector_name:      systemContext.sector_name,
     sector_id:        systemContext.sector_id,
@@ -205,7 +207,8 @@ function findBestRefuelGasGiant(system) {
   let bestKm = Infinity;
   for (const body of bodies) {
     if (!/gas/i.test(body.type ?? "")) continue;
-    const km = body.jump_shadow;
+    const js = body.jump_shadow;
+    const km = typeof js === "number" ? js : (js?.distance_km ?? null);
     if (typeof km === "number" && km > 0 && km < bestKm) {
       best = body;
       bestKm = km;
@@ -228,6 +231,8 @@ export function buildOverviewData(system, mDrive = 1) {
     : "—";
 
   const gg = findBestRefuelGasGiant(system);
+  const ggJs = gg?.jump_shadow;
+  const ggKm = ggJs != null ? (typeof ggJs === "number" ? ggJs : (ggJs?.distance_km ?? 0)) : 0;
 
   return {
     systemName:    ctx.star_system_name,
@@ -246,11 +251,16 @@ export function buildOverviewData(system, mDrive = 1) {
     bodies: buildBodyList(system, mDrive),
     gasGiantJumpShadow: gg ? {
       label:      [gg.orbit_sequence, gg.name].filter(Boolean).join(" — "),
-      safeJumpKm: Number(gg.jump_shadow).toLocaleString(),
-      times:      [1, 2, 3, 4, 5, 6].map((g) => ({
-        g:     `${g}G`,
-        value: formatTransitTime(calcTransitHours(gg.jump_shadow, g)),
-      })),
+      safeJumpKm: Number(ggKm).toLocaleString(),
+      times: ggJs?.travel_times
+        ? [1, 2, 3, 4, 5, 6].map((g) => ({
+            g:     `${g}G`,
+            value: formatTransitTime(ggJs.travel_times[`${g}g`]),
+          }))
+        : [1, 2, 3, 4, 5, 6].map((g) => ({
+            g:     `${g}G`,
+            value: formatTransitTime(calcTransitHours(ggKm, g)),
+          })),
     } : null,
   };
 }
@@ -259,29 +269,28 @@ function buildBodyList(system, mDrive) {
   return (system.primary_star?.stellar_objects ?? [])
     .filter((body) => body.type !== "Moon" && body.type !== "Planetoid")
     .map((body) => {
-    const js = body.jump_shadow;
-    const km = typeof js === "number" ? js : (js?.distance_km ?? null);
-    const safeJump = km != null && km > 0
-      ? formatJumpShadowTime(calcTransitHours(km, mDrive))
-      : "—";
-    const ggKey = GAS_GIANT_SIZE[body.code];
-    const uwpSam = body.uwp
-      ? body.uwp
-      : ggKey ? game.i18n.localize(ggKey) : "—";
-    return {
-      label:    body.orbit_sequence ?? "—",
-      uwpSam,
-      orbit:    body.au != null ? `${Number(body.au).toFixed(2)}` : "—",
-      moons:    body.moons?.length ?? 0,
-      safeJump,
-    };
-  });
+      const js = body.jump_shadow;
+      const km = typeof js === "number" ? js : (js?.distance_km ?? null);
+      const safeJump = km != null && km > 0
+        ? formatJumpShadowTime(calcTransitHours(km, mDrive))
+        : "—";
+      const ggKey = GAS_GIANT_SIZE[body.code];
+      const uwpSam = body.uwp
+        ? body.uwp
+        : ggKey ? game.i18n.localize(ggKey) : "—";
+      return {
+        label:    body.orbit_sequence ?? "—",
+        uwpSam,
+        orbit:    body.au != null ? `${Number(body.au).toFixed(2)}` : "—",
+        moons:    body.moons?.length ?? 0,
+        safeJump,
+      };
+    });
 }
 
 /* ── Transit page data ──────────────────────────────────────── */
 
 // 1G = 10 m/s² = 0.01 km/s² (standard Traveller approximation)
-// orbit_position values are in km
 export function calcTransitHours(d_km, mDrive) {
   if (d_km <= 0) return 0;
   const accel = mDrive * 0.01;
@@ -303,8 +312,13 @@ export function buildTransitData(system, mDrive) {
 
   for (const body of star.stellar_objects ?? []) {
     if (body.type === "Planetoid") continue;
+    // Handle both orbit_position object and flat orbit_x/orbit_y fields
     const pos = body.orbit_position ?? {};
-    nodes.push({ label: body.orbit_sequence ?? "—", x: pos.x ?? 0, y: pos.y ?? 0 });
+    nodes.push({
+      label: body.orbit_sequence ?? "—",
+      x: pos.x ?? body.orbit_x ?? 0,
+      y: pos.y ?? body.orbit_y ?? 0,
+    });
   }
 
   const rows = nodes.map((from, i) => ({
@@ -321,7 +335,7 @@ export function buildTransitData(system, mDrive) {
   return { mDrive, headers: nodes.map((n) => n.label), rows };
 }
 
-/* ── Player / GM data builders (unchanged) ──────────────────── */
+/* ── Player / GM data builders ──────────────────────────────── */
 
 export function formatJumpShadowTime(hours) {
   if (hours >= 24) return `${(hours / 24).toFixed(1)}d`;
@@ -348,21 +362,46 @@ function snakeToTitle(str) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function yes() { return game.i18n.localize("MTU.value.yes"); }
-function no()  { return game.i18n.localize("MTU.value.no");  }
-function none(){ return game.i18n.localize("MTU.value.none"); }
+function yes()  { return game.i18n.localize("MTU.value.yes"); }
+function no()   { return game.i18n.localize("MTU.value.no");  }
+function none() { return game.i18n.localize("MTU.value.none"); }
+
+function govStructEntry(sub) {
+  if (!sub?.code) return "—";
+  return `${sub.code} — ${sub.description ?? GOV_STRUCTURE[sub.code] ?? "—"}`;
+}
+
+function govCodeEntry(val, lookup) {
+  if (!val?.code) return "—";
+  return `${val.code} — ${val.description ?? lookup[val.code] ?? "—"}`;
+}
+
+function tlEntry(sub) {
+  if (!sub?.code) return "—";
+  return sub.description != null ? `${sub.code} — ${sub.description}` : String(sub.code);
+}
 
 export function buildPlayerData(payload) {
-  const sp = STARPORT[payload.starport_code] ?? {};
-  const atm = ATMOSPHERE[payload.atmosphere?.code] ?? {};
-  const pop = POPULATION[payload.population?.code] ?? "—";
-  const gov = GOVERNMENT[payload.government?.code] ?? "—";
-  const law = LAW_WEAPONS[payload.law_level?.code] ?? "—";
-  const tl  = TECH_LEVEL[payload.tech_level_code] ?? {};
+  const sp       = payload.starport ?? {};
+  const spLookup = STARPORT[payload.starport_code] ?? {};
+  const spQuality    = sp.quality    ?? spLookup.description;
+  const spFuel       = sp.fuel       ?? spLookup.fuel;
+  const spFacilities = sp.facilities ?? spLookup.facilities;
+  const starportValue = payload.starport_code
+    ? `${payload.starport_code} — ${spQuality ?? "—"}; ${spFuel ?? "—"}; ${spFacilities ?? "—"}`
+    : "—";
 
-  const starportValue = sp.description
-    ? `${payload.starport_code} — ${sp.description}; ${sp.fuel}; ${sp.facilities}`
-    : payload.starport_code ?? "—";
+  const atm        = ATMOSPHERE[payload.atmosphere?.code] ?? {};
+  const survivalReq = payload.atmosphere?.survival_requirement?.value ?? atm.survivalReq ?? "—";
+
+  const popCode = payload.population?.code;
+  const pop     = POPULATION[popCode] ?? payload.population?.range ?? "—";
+  const govCode = payload.government?.code;
+  const gov     = payload.government?.type ?? GOVERNMENT[govCode] ?? "—";
+  const lawCode = payload.law_level?.code;
+  const law     = LAW_WEAPONS[lawCode] ?? "—";
+
+  const tl = payload.tech_level ?? {};
 
   return {
     name: payload.name,
@@ -372,13 +411,13 @@ export function buildPlayerData(payload) {
       { label: "MTU.label.type",          value: humaniseType(payload.type ?? "") },
       { label: "MTU.label.uwp",           value: payload.uwp ?? "—" },
       { label: "MTU.label.starport",      value: starportValue },
-      { label: "MTU.label.gravity",       value: `${fmt(payload.gravity)} g` },
+      { label: "MTU.label.gravity",       value: `${fmt(payload.gravity)} ⊕` },
       { label: "MTU.label.temperature",   value: `${Math.round(payload.temperature - 273.15)}°C` },
-      { label: "MTU.label.survivalReq",   value: atm.survivalReq ?? "—" },
-      { label: "MTU.label.population",    value: `${payload.population?.code} — ${pop}` },
-      { label: "MTU.label.government",    value: `${payload.government?.code} — ${gov}` },
-      { label: "MTU.label.lawLevel",      value: `${payload.law_level?.code} — ${law}` },
-      { label: "MTU.label.techLevel",     value: `${payload.tech_level_code} — ${tl.era ?? "—"}` },
+      { label: "MTU.label.survivalReq",   value: survivalReq },
+      { label: "MTU.label.population",    value: popCode != null ? `${popCode} — ${pop}` : "—" },
+      { label: "MTU.label.government",    value: govCode != null ? `${govCode} — ${gov}` : "—" },
+      { label: "MTU.label.lawLevel",      value: lawCode != null ? `${lawCode} — ${law}` : "—" },
+      { label: "MTU.label.techLevel",     value: tl.code != null ? `${tl.code} — ${tl.descriptor ?? "—"}` : "—" },
       { label: "MTU.label.nativeSophont", value: payload.native_sophont ? yes() : none() },
     ],
     jumpShadow: buildJumpShadowTimes(payload),
@@ -393,10 +432,17 @@ export function buildPlayerData(payload) {
 
 export function buildGmData(payload, campaignSlug) {
   const player = buildPlayerData(payload);
-  const js = payload.jump_shadow;
+  const js  = payload.jump_shadow;
   const jsKm = typeof js === "number" ? js : (js?.distance_km ?? null);
   const eco = payload.economics ?? {};
-  const tl = TECH_LEVEL[payload.tech_level_code] ?? {};
+
+  const sp       = payload.starport ?? {};
+  const spLookup = STARPORT[payload.starport_code] ?? {};
+  const spQuality    = sp.quality    ?? spLookup.description ?? "—";
+  const spFuel       = sp.fuel       ?? spLookup.fuel        ?? "—";
+  const spFacilities = sp.facilities ?? spLookup.facilities  ?? "—";
+
+  const tl = payload.tech_level ?? {};
 
   const base = campaignSlug ? `https://mytravelleruniverse.net/c/${campaignSlug}` : null;
   const starSystemUrl = base && payload.star_system_id ? `${base}/star_systems/${payload.star_system_id}` : null;
@@ -408,17 +454,17 @@ export function buildGmData(payload, campaignSlug) {
     location: { ...player.location, starSystemUrl, subsectorUrl, sectorUrl },
 
     orbital: [
-      { label: "MTU.label.hex",          value: payload.hex ?? "—" },
-      { label: "MTU.label.orbit",        value: fmt(payload.orbit, 2) },
-      { label: "MTU.label.au",           value: `${fmt(payload.au, 4)} AU` },
-      { label: "MTU.label.period",       value: `${fmt(payload.period, 1)} d` },
-      { label: "MTU.label.hzcoDev",      value: fmt(payload.effective_hzco_deviation, 2) },
-      { label: "MTU.label.retrograde",   value: payload.retrograde ? yes() : no() },
-      { label: "MTU.label.inclination",  value: `${fmt(payload.inclination, 1)}°` },
-      { label: "MTU.label.eccentricity", value: fmt(payload.eccentricity, 2) },
+      { label: "MTU.label.hex",           value: payload.hex ?? "—" },
+      { label: "MTU.label.orbit",         value: fmt(payload.orbit, 2) },
+      { label: "MTU.label.au",            value: `${fmt(payload.au, 4)} AU` },
+      { label: "MTU.label.period",        value: `${fmt(payload.period, 1)} d` },
+      { label: "MTU.label.hzcoDev",       value: fmt(payload.effective_hzco_deviation, 2) },
+      { label: "MTU.label.retrograde",    value: payload.retrograde ? yes() : no() },
+      { label: "MTU.label.inclination",   value: `${fmt(payload.inclination, 1)}°` },
+      { label: "MTU.label.eccentricity",  value: fmt(payload.eccentricity, 2) },
       { label: "MTU.label.tidallyLocked", value: payload.tidal_lock ? payload.tidal_lock : no() },
-      { label: "MTU.label.siderealDay",  value: `${fmt(payload.sidereal_day, 2)} hours` },
-      { label: "MTU.label.twilightZone", value: payload.twilight_zone ? yes() : no() },
+      { label: "MTU.label.siderealDay",   value: `${fmt(payload.sidereal_day, 2)} hours` },
+      { label: "MTU.label.twilightZone",  value: payload.twilight_zone ? yes() : no() },
     ],
 
     jumpShadowDetail: jsKm != null ? {
@@ -428,29 +474,45 @@ export function buildGmData(payload, campaignSlug) {
     } : null,
 
     starport: [
-      { label: "MTU.label.starport",          value: `${payload.starport_code} — ${STARPORT[payload.starport_code]?.description ?? "—"}` },
-      { label: "MTU.label.fuel",              value: STARPORT[payload.starport_code]?.fuel ?? "—" },
-      { label: "MTU.label.facilities",        value: STARPORT[payload.starport_code]?.facilities ?? "—" },
-      { label: "MTU.label.worldTradeNumber",  value: eco.world_trade_number ?? "—" },
-      { label: "MTU.label.importance",        value: eco.importance != null ? (eco.importance > 0 ? `+${eco.importance}` : String(eco.importance)) : "—" },
-      { label: "MTU.label.developmentScore",  value: eco.development_score != null ? fmt(eco.development_score, 1) : "—" },
-      { label: "MTU.label.perCapitaGwp",      value: eco.per_capita_gwp != null ? `${Number(eco.per_capita_gwp).toLocaleString()} Cr` : "—" },
-      { label: "MTU.label.totalGwp",          value: eco.total_gwp != null ? formatGwp(eco.total_gwp) : "—" },
-      { label: "MTU.label.infrastructure",    value: eco.infrastructure ?? "—" },
-      { label: "MTU.label.resourceUnits",     value: eco.resource_units ?? "—" },
-      { label: "MTU.label.resourceFactor",    value: eco.resource_factor ?? "—" },
-      { label: "MTU.label.labourFactor",      value: eco.labour_factor ?? "—" },
-      { label: "MTU.label.efficiency",        value: eco.efficiency ?? "—" },
-      { label: "MTU.label.inequalityRating",  value: eco.inequality_rating ?? "—" },
-      { label: "MTU.label.tariffRegime",      value: eco.tariffs?.regime != null ? snakeToTitle(eco.tariffs.regime) : "—" },
-      { label: "MTU.label.tariffRate",        value: eco.tariffs?.rate != null ? `${eco.tariffs.rate}%` : "—" },
+      { label: "MTU.label.starport",   value: payload.starport_code ? `${payload.starport_code} ${spQuality}` : "—" },
+      { label: "MTU.label.fuel",       value: spFuel },
+      { label: "MTU.label.facilities", value: spFacilities },
     ],
+
+    economics: (() => {
+      const wtn      = eco.world_trade_number?.value ?? eco.world_trade_number;
+      const imp      = eco.importance?.value ?? eco.importance;
+      const devScore = eco.development_score?.value ?? eco.development_score;
+      const perCap   = eco.per_capita_gwp?.value ?? eco.per_capita_gwp;
+      const totGwp   = eco.total_gwp?.value ?? eco.total_gwp;
+      const infra    = eco.infrastructure?.value ?? eco.infrastructure;
+      const resUnits = eco.resource_units?.value ?? eco.resource_units;
+      const resFactor= eco.resource_factor?.value ?? eco.resource_factor;
+      const labFactor= eco.labour_factor?.value ?? eco.labour_factor;
+      const eff      = eco.efficiency?.value ?? eco.efficiency;
+      const ineq     = eco.inequality_rating?.value ?? eco.inequality_rating;
+      return [
+        { label: "MTU.label.worldTradeNumber", value: wtn ?? "—" },
+        { label: "MTU.label.importance",       value: imp != null ? (imp > 0 ? `+${imp}` : String(imp)) : "—" },
+        { label: "MTU.label.developmentScore", value: devScore != null ? fmt(devScore, 1) : "—" },
+        { label: "MTU.label.perCapitaGwp",     value: perCap != null ? formatGwp(perCap) : "—" },
+        { label: "MTU.label.totalGwp",         value: totGwp != null ? formatGwp(totGwp) : "—" },
+        { label: "MTU.label.infrastructure",   value: infra ?? "—" },
+        { label: "MTU.label.resourceUnits",    value: resUnits ?? "—" },
+        { label: "MTU.label.resourceFactor",   value: resFactor ?? "—" },
+        { label: "MTU.label.labourFactor",     value: labFactor ?? "—" },
+        { label: "MTU.label.efficiency",       value: eff ?? "—" },
+        { label: "MTU.label.inequalityRating", value: ineq ?? "—" },
+        { label: "MTU.label.tariffRegime",     value: eco.tariffs?.regime != null ? snakeToTitle(eco.tariffs.regime) : "—" },
+        { label: "MTU.label.tariffRate",       value: eco.tariffs?.rate != null ? `${eco.tariffs.rate}%` : "—" },
+      ];
+    })(),
 
     physical: [
       { label: "MTU.label.diameter", value: payload.diameter != null ? `${payload.size_code} — ${Number(payload.diameter).toLocaleString()} km` : "—" },
-      { label: "MTU.label.mass",     value: payload.mass != null ? `${fmt(payload.mass, 2)} M⊕` : "—" },
-      { label: "MTU.label.gravity",  value: `${fmt(payload.gravity, 2)} g` },
-      { label: "MTU.label.density",  value: payload.density != null ? `${fmt(payload.density, 2)} ρ⊕` : "—" },
+      { label: "MTU.label.mass",     value: payload.mass != null ? `${fmt(payload.mass, 2)} ⊕` : "—" },
+      { label: "MTU.label.gravity",  value: `${fmt(payload.gravity, 2)} ⊕` },
+      { label: "MTU.label.density",  value: payload.density != null ? `${fmt(payload.density, 2)} ⊕` : "—" },
     ],
 
     environmental: [
@@ -463,31 +525,49 @@ export function buildGmData(payload, campaignSlug) {
 
     atmosphere: [
       { label: "MTU.label.atmosphere", value: payload.atmosphere?.code != null
-          ? `${payload.atmosphere.code} — ${ATMOSPHERE[payload.atmosphere.code]?.description ?? "—"}`
+          ? `${payload.atmosphere.code} — ${payload.atmosphere.description ?? ATMOSPHERE[payload.atmosphere.code]?.description ?? "—"}`
           : "—" },
     ],
 
     hydrographics: (() => {
       const h = payload.hydrographics ?? {};
+      const hydroDesc = h.description ?? hydroRange(h.code);
+      const liquid    = h.liquid?.value ?? h.liquid;
+      const distCode  = h.distribution?.code ?? (typeof h.distribution === "number" ? h.distribution : null);
+      const distDesc  = h.distribution?.description ?? HYDRO_DISTRIBUTION[distCode] ?? "—";
       return [
-        { label: "MTU.label.hydrographics", value: h.code != null ? `${h.code} — ${hydroRange(h.code)}` : "—" },
-        { label: "MTU.label.liquid",        value: h.liquid ?? "—" },
-        { label: "MTU.label.distribution",  value: h.distribution != null
-            ? `${h.distribution} — ${HYDRO_DISTRIBUTION[h.distribution] ?? "—"}`
-            : "—" },
+        { label: "MTU.label.hydrographics", value: h.code != null ? `${h.code} — ${hydroDesc}` : "—" },
+        { label: "MTU.label.liquid",        value: liquid ?? "—" },
+        { label: "MTU.label.distribution",  value: distCode != null ? `${distCode} — ${distDesc}` : "—" },
       ];
     })(),
 
     population: (() => {
-      const p = payload.population ?? {};
+      const p   = payload.population ?? {};
+      const bio = p.biological_data ?? {};
+      const popRange     = p.range ?? POPULATION[p.code] ?? "—";
+      const concCode     = p.concentration_rating?.code ?? (typeof p.concentration_rating === "number" ? p.concentration_rating : null);
+      const concDesc     = p.concentration_rating?.description ?? POPULATION_CONCENTRATION[concCode] ?? "—";
+      const urbanPct     = p.urbanization_percentage?.value ?? p.urbanization_percentage;
+      const majorCities  = p.major_cities?.value ?? p.major_cities;
+      const majorCityPop = p.major_city_population?.value ?? p.major_city_population;
+      const nativeSoph   = p.native_sophont?.value ?? payload.native_sophont;
+      const extinctSoph  = p.extinct_sophont?.value ?? payload.extinct_sophont;
+      const biodiverCode  = bio.biodiversity_rating?.code ?? payload.biodiversity_rating;
+      const biodiverDesc  = bio.biodiversity_rating?.description ?? BIODIVERSITY[biodiverCode] ?? "—";
+      const biocomplexCode = bio.biocomplexity_rating?.code ?? payload.biocomplexity_rating;
+      const biocomplexDesc = bio.biocomplexity_rating?.description ?? BIOCOMPLEXITY[biocomplexCode] ?? "—";
+      const resourceCode  = bio.resource_rating?.code ?? payload.resource_rating;
+      const resourceDesc  = bio.resource_rating?.description ?? RESOURCE_RATING[resourceCode] ?? "—";
+      const biomassVal    = bio.biomass_rating?.value ?? payload.biomass_rating;
       return [
-        { label: "MTU.label.population",          value: `${p.code} — ${POPULATION[p.code] ?? "—"}` },
-        { label: "MTU.label.concentration",       value: p.concentration_rating != null ? `${p.concentration_rating} — ${POPULATION_CONCENTRATION[p.concentration_rating] ?? "—"}` : "—" },
-        { label: "MTU.label.urbanisation",        value: p.urbanization_percentage != null ? `${p.urbanization_percentage}%` : "—" },
-        { label: "MTU.label.majorCities",         value: p.major_cities ?? "—" },
-        { label: "MTU.label.majorCityPopulation", value: p.major_city_population != null ? Number(p.major_city_population).toLocaleString() : "—" },
-        { label: "MTU.label.nativeSophont",       value: payload.native_sophont ? yes() : no() },
-        { label: "MTU.label.extinctSophont",      value: payload.extinct_sophont ? yes() : no() },
+        { label: "MTU.label.population",          value: p.code != null ? `${p.code} — ${popRange}` : "—" },
+        { label: "MTU.label.concentration",       value: concCode != null ? `${concCode} — ${concDesc}` : "—" },
+        { label: "MTU.label.urbanisation",        value: urbanPct != null ? `${urbanPct}%` : "—" },
+        { label: "MTU.label.majorCities",         value: majorCities ?? "—" },
+        { label: "MTU.label.majorCityPopulation", value: majorCityPop != null ? Number(majorCityPop).toLocaleString() : "—" },
+        { label: "MTU.label.nativeSophont",       value: nativeSoph ? yes() : no() },
+        { label: "MTU.label.extinctSophont",      value: extinctSoph ? yes() : no() },
         { label: "MTU.label.diversity",           value: fmtDm(p.diversity) },
         { label: "MTU.label.xenophilia",          value: fmtDm(p.xenophilia) },
         { label: "MTU.label.uniqueness",          value: fmtDm(p.uniqueness) },
@@ -497,38 +577,34 @@ export function buildGmData(payload, campaignSlug) {
         { label: "MTU.label.expansionism",        value: fmtDm(p.expansionism) },
         { label: "MTU.label.militancy",           value: fmtDm(p.militancy) },
         { label: "MTU.label.habitabilityRating",  value: payload.habitability_rating ?? "—" },
-        { label: "MTU.label.biomassRating",       value: payload.biomass_rating ?? "—" },
-        { label: "MTU.label.biodiversityRating",  value: payload.biodiversity_rating != null
-            ? `${payload.biodiversity_rating} — ${BIODIVERSITY[payload.biodiversity_rating] ?? "—"}`
-            : "—" },
-        { label: "MTU.label.biocomplexityRating", value: payload.biocomplexity_rating != null
-            ? `${payload.biocomplexity_rating} — ${BIOCOMPLEXITY[payload.biocomplexity_rating] ?? "—"}`
-            : "—" },
-        { label: "MTU.label.resourceRating",      value: payload.resource_rating != null
-            ? `${payload.resource_rating} — ${RESOURCE_RATING[payload.resource_rating] ?? "—"}`
-            : "—" },
+        { label: "MTU.label.biomassRating",       value: biomassVal ?? "—" },
+        { label: "MTU.label.biodiversityRating",  value: biodiverCode != null ? `${biodiverCode} — ${biodiverDesc}` : "—" },
+        { label: "MTU.label.biocomplexityRating", value: biocomplexCode != null ? `${biocomplexCode} — ${biocomplexDesc}` : "—" },
+        { label: "MTU.label.resourceRating",      value: resourceCode != null ? `${resourceCode} — ${resourceDesc}` : "—" },
       ];
     })(),
 
     government: (() => {
       const g = payload.government ?? {};
+      const govType = g.type ?? GOVERNMENT[g.code] ?? "—";
       const s = g.structure ?? {};
       return [
-        { label: "MTU.label.government",           value: `${g.code} — ${GOVERNMENT[g.code] ?? "—"}` },
-        { label: "MTU.label.description",          value: GOVERNMENT[g.code] ?? "—" },
-        { label: "MTU.label.judicialStructure",    value: s.judicial ? `${s.judicial} — ${GOV_STRUCTURE[s.judicial] ?? "—"}` : "—" },
-        { label: "MTU.label.executiveStructure",   value: s.executive ? `${s.executive} — ${GOV_STRUCTURE[s.executive] ?? "—"}` : "—" },
-        { label: "MTU.label.legislativeStructure", value: s.legislative ? `${s.legislative} — ${GOV_STRUCTURE[s.legislative] ?? "—"}` : "—" },
-        { label: "MTU.label.authority",            value: g.authority ? `${g.authority} — ${GOV_AUTHORITY[g.authority] ?? "—"}` : "—" },
-        { label: "MTU.label.centralisation",       value: g.centralisation ? `${g.centralisation} — ${GOV_CENTRALISATION[g.centralisation] ?? "—"}` : "—" },
+        { label: "MTU.label.government",           value: g.code != null ? `${g.code} — ${govType}` : "—" },
+        { label: "MTU.label.description",          value: g.description ?? govType },
+        { label: "MTU.label.judicialStructure",    value: govStructEntry(s.judicial) },
+        { label: "MTU.label.executiveStructure",   value: govStructEntry(s.executive) },
+        { label: "MTU.label.legislativeStructure", value: govStructEntry(s.legislative) },
+        { label: "MTU.label.authority",            value: govCodeEntry(g.authority,      GOV_AUTHORITY) },
+        { label: "MTU.label.centralisation",       value: govCodeEntry(g.centralisation, GOV_CENTRALISATION) },
       ];
     })(),
 
     lawLevel: (() => {
       const l = payload.law_level ?? {};
+      const lawLabel = LAW_WEAPONS[l.code] ?? "—";
       return [
-        { label: "MTU.label.lawLevel",                    value: `${l.code}` },
-        { label: "MTU.label.weaponsArmour",               value: LAW_WEAPONS[l.code] ?? "—" },
+        { label: "MTU.label.lawLevel",                    value: l.code != null ? `${l.code} — ${lawLabel}` : "—" },
+        { label: "MTU.label.weaponsArmour",               value: lawLabel },
         { label: "MTU.label.criminalLaw",                 value: l.criminal_law ?? "—" },
         { label: "MTU.label.economicLaw",                 value: l.economic_law ?? "—" },
         { label: "MTU.label.privateLaw",                  value: l.private_law ?? "—" },
@@ -542,18 +618,18 @@ export function buildGmData(payload, campaignSlug) {
     })(),
 
     techLevel: [
-      { label: "MTU.label.techLevel",       value: `${payload.tech_level_code} — ${tl.era ?? "—"}` },
-      { label: "MTU.label.era",             value: tl.era ?? "—" },
-      { label: "MTU.label.electronics",     value: tl.electronics ?? "—" },
-      { label: "MTU.label.energy",          value: tl.energy ?? "—" },
-      { label: "MTU.label.land",            value: tl.land ?? "—" },
-      { label: "MTU.label.air",             value: tl.air ?? "—" },
-      { label: "MTU.label.space",           value: tl.space ?? "—" },
-      { label: "MTU.label.personalMilitary", value: tl.personalMilitary ?? "—" },
-      { label: "MTU.label.heavyMilitary",   value: tl.heavyMilitary ?? "—" },
-      { label: "MTU.label.manufacturing",   value: tl.manufacturing ?? "—" },
-      { label: "MTU.label.medical",         value: tl.medical ?? "—" },
-      { label: "MTU.label.environmental",   value: tl.environmental ?? "—" },
+      { label: "MTU.label.techLevel",        value: tl.code != null ? `${tl.code} — ${tl.descriptor ?? "—"}` : "—" },
+      { label: "MTU.label.electronics",      value: tlEntry(tl.electronics) },
+      { label: "MTU.label.energy",           value: tlEntry(tl.energy) },
+      { label: "MTU.label.land",             value: tlEntry(tl.land) },
+      { label: "MTU.label.sea",              value: tlEntry(tl.sea) },
+      { label: "MTU.label.air",              value: tlEntry(tl.air) },
+      { label: "MTU.label.space",            value: tlEntry(tl.space) },
+      { label: "MTU.label.personalMilitary", value: tlEntry(tl.personal_military) },
+      { label: "MTU.label.heavyMilitary",    value: tlEntry(tl.heavy_military) },
+      { label: "MTU.label.manufacturing",    value: tlEntry(tl.manufacturing) },
+      { label: "MTU.label.medical",          value: tlEntry(tl.medical) },
+      { label: "MTU.label.environmental",    value: tlEntry(tl.environmental) },
     ],
   };
 }
@@ -561,10 +637,16 @@ export function buildGmData(payload, campaignSlug) {
 function buildJumpShadowTimes(payload) {
   const js = payload.jump_shadow;
   if (js == null) return null;
+  if (js.travel_times) {
+    return [1, 2, 3, 4, 5, 6].map((g) => ({
+      g:     `${g}G`,
+      value: formatJumpShadowTime(js.travel_times[`${g}g`]),
+    }));
+  }
   const km = typeof js === "number" ? js : js.distance_km;
   if (!km || km <= 0) return null;
   return [1, 2, 3, 4, 5, 6].map((g) => ({
-    g: `${g}G`,
+    g:     `${g}G`,
     value: formatJumpShadowTime(calcTransitHours(km, g)),
   }));
 }
@@ -578,26 +660,29 @@ function fmtDm(n) {
 
 function hydroRange(code) {
   const ranges = {
-    0: "No free standing water",
-    1: "1%–5%",
-    2: "6%–15%",
-    3: "16%–25%",
-    4: "26%–35%",
-    5: "36%–45%",
-    6: "46%–55%",
-    7: "66%–75%",
-    8: "76%–85%",
-    9: "86%–95%",
+    0:  "No free standing water",
+    1:  "1%–5%",
+    2:  "6%–15%",
+    3:  "16%–25%",
+    4:  "26%–35%",
+    5:  "36%–45%",
+    6:  "46%–55%",
+    7:  "66%–75%",
+    8:  "76%–85%",
+    9:  "86%–95%",
     10: "96%–100%",
   };
   return ranges[code] ?? "—";
 }
 
 function formatGwp(value) {
-  if (value >= 1e12) return `${(value / 1e12).toFixed(0)} Tr`;
-  if (value >= 1e9)  return `${(value / 1e9).toFixed(0)} Bn`;
-  if (value >= 1e6)  return `${(value / 1e6).toFixed(0)} Mn`;
-  return `${Number(value).toLocaleString()} Cr`;
+  const n = Number(value);
+  const abbr = (v) => v % 1 === 0 ? String(v) : v.toFixed(1);
+  if (n >= 1e12) return `${abbr(n / 1e12)} T`;
+  if (n >= 1e9)  return `${abbr(n / 1e9)} B`;
+  if (n >= 1e6)  return `${abbr(n / 1e6)} M`;
+  if (n >= 1e3)  return `${abbr(n / 1e3)} K`;
+  return `${n.toLocaleString()} Cr`;
 }
 
 export { MODULE_ID };
