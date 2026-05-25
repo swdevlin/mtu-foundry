@@ -190,30 +190,45 @@ export function normalizeBodyPayload(body, systemContext) {
 export function findMainWorld(system) {
   const targetUwp = system.main_world?.uwp;
   if (!targetUwp) return null;
-  for (const body of system.primary_star?.stellar_objects ?? []) {
-    if (body.uwp === targetUwp) return body;
-    for (const moon of body.moons ?? []) {
-      if (moon.uwp === targetUwp) return moon;
+
+  function searchObjects(objects) {
+    for (const body of objects ?? []) {
+      if (body.type === "Star") {
+        const found = searchObjects(body.stellar_objects);
+        if (found) return found;
+        continue;
+      }
+      if (body.uwp === targetUwp) return body;
+      for (const moon of body.moons ?? []) {
+        if (moon.uwp === targetUwp) return moon;
+      }
     }
+    return null;
   }
-  return null;
+
+  return searchObjects(system.primary_star?.stellar_objects);
 }
 
 /* ── Overview page data ─────────────────────────────────────── */
 
 function findBestRefuelGasGiant(system) {
-  const bodies = system.primary_star?.stellar_objects ?? [];
   let best = null;
   let bestKm = Infinity;
-  for (const body of bodies) {
-    if (!/gas/i.test(body.type ?? "")) continue;
-    const js = body.jump_shadow;
-    const km = typeof js === "number" ? js : (js?.distance_km ?? null);
-    if (typeof km === "number" && km > 0 && km < bestKm) {
-      best = body;
-      bestKm = km;
+
+  function searchObjects(objects) {
+    for (const body of objects ?? []) {
+      if (body.type === "Star") { searchObjects(body.stellar_objects); continue; }
+      if (!/gas/i.test(body.type ?? "")) continue;
+      const js = body.jump_shadow;
+      const km = typeof js === "number" ? js : (js?.distance_km ?? null);
+      if (typeof km === "number" && km > 0 && km < bestKm) {
+        best = body;
+        bestKm = km;
+      }
     }
   }
+
+  searchObjects(system.primary_star?.stellar_objects);
   return best;
 }
 
@@ -266,26 +281,36 @@ export function buildOverviewData(system, mDrive = 1) {
 }
 
 function buildBodyList(system, mDrive) {
-  return (system.primary_star?.stellar_objects ?? [])
-    .filter((body) => body.type !== "Moon" && body.type !== "Planetoid")
-    .map((body) => {
-      const js = body.jump_shadow;
-      const km = typeof js === "number" ? js : (js?.distance_km ?? null);
-      const safeJump = km != null && km > 0
-        ? formatJumpShadowTime(calcTransitHours(km, mDrive))
-        : "—";
-      const ggKey = GAS_GIANT_SIZE[body.code];
-      const uwpSam = body.uwp
-        ? body.uwp
-        : ggKey ? game.i18n.localize(ggKey) : "—";
-      return {
-        label:    body.orbit_sequence ?? "—",
-        uwpSam,
-        orbit:    body.au != null ? `${Number(body.au).toFixed(2)}` : "—",
-        moons:    body.moons?.length ?? 0,
-        safeJump,
-      };
-    });
+  const collected = [];
+
+  function collectBodies(objects) {
+    for (const body of objects ?? []) {
+      if (body.type === "Moon" || body.type === "Planetoid") continue;
+      collected.push(body);
+      if (body.type === "Star") collectBodies(body.stellar_objects);
+    }
+  }
+
+  collectBodies(system.primary_star?.stellar_objects);
+
+  return collected.map((body) => {
+    const js = body.jump_shadow;
+    const km = typeof js === "number" ? js : (js?.distance_km ?? null);
+    const safeJump = km != null && km > 0
+      ? formatJumpShadowTime(calcTransitHours(km, mDrive))
+      : "—";
+    const ggKey = GAS_GIANT_SIZE[body.code];
+    const uwpSam = body.uwp
+      ? body.uwp
+      : ggKey ? game.i18n.localize(ggKey) : "—";
+    return {
+      label:    body.orbit_sequence ?? "—",
+      uwpSam,
+      orbit:    body.au != null ? `${Number(body.au).toFixed(2)}` : "—",
+      moons:    body.moons?.length ?? 0,
+      safeJump,
+    };
+  });
 }
 
 /* ── Transit page data ──────────────────────────────────────── */
@@ -310,16 +335,20 @@ export function buildTransitData(system, mDrive) {
 
   const nodes = [{ label: starLabel, x: 0, y: 0 }];
 
-  for (const body of star.stellar_objects ?? []) {
-    if (body.type === "Planetoid") continue;
-    // Handle both orbit_position object and flat orbit_x/orbit_y fields
-    const pos = body.orbit_position ?? {};
-    nodes.push({
-      label: body.orbit_sequence ?? "—",
-      x: pos.x ?? body.orbit_x ?? 0,
-      y: pos.y ?? body.orbit_y ?? 0,
-    });
+  function addBodies(objects, offsetX = 0, offsetY = 0) {
+    for (const body of objects ?? []) {
+      if (body.type === "Planetoid") continue;
+      // Bodies orbiting a companion star have orbit_position relative to that star,
+      // so we accumulate the offset down the tree.
+      const pos = body.orbit_position ?? {};
+      const x = (pos.x ?? body.orbit_x ?? 0) + offsetX;
+      const y = (pos.y ?? body.orbit_y ?? 0) + offsetY;
+      nodes.push({ label: body.orbit_sequence ?? "—", x, y });
+      if (body.type === "Star") addBodies(body.stellar_objects, x, y);
+    }
   }
+
+  addBodies(star.stellar_objects);
 
   const rows = nodes.map((from, i) => ({
     label: from.label,

@@ -420,9 +420,10 @@ async function renderMtuContent(mode, system, campaignSlug) {
       }
       const ctx = buildSystemContext(system);
       const star = system.primary_star ?? {};
+      const primaryStarLabel = `${star.stellar_type ?? ""}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim() || "—";
       const mainWorldCtx = {
         ...ctx,
-        orbiting_name: `${star.stellar_type ?? ""}${star.stellar_subtype ?? ""} ${star.stellar_class ?? ""}`.trim() || "—",
+        orbiting_name: mainWorld.orbiting_name || primaryStarLabel,
       };
       const normalizedBody = normalizeBodyPayload(mainWorld, mainWorldCtx);
       const data = mode === "gm" ? buildGmData(normalizedBody, campaignSlug) : buildPlayerData(normalizedBody);
