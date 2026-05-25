@@ -300,9 +300,12 @@ function buildBodyList(system, mDrive) {
       ? formatJumpShadowTime(calcTransitHours(km, mDrive))
       : "—";
     const ggKey = GAS_GIANT_SIZE[body.code];
-    const uwpSam = body.uwp
-      ? body.uwp
-      : ggKey ? game.i18n.localize(ggKey) : "—";
+    let uwpSam;
+    if (body.type === "Star" && body.stellar_type) {
+      uwpSam = `${body.stellar_type}${body.stellar_subtype ?? ""} ${body.stellar_class ?? ""}`.trim();
+    } else {
+      uwpSam = body.uwp ? body.uwp : ggKey ? game.i18n.localize(ggKey) : "—";
+    }
     return {
       label:    body.orbit_sequence ?? "—",
       uwpSam,
