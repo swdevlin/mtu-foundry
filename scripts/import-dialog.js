@@ -9,6 +9,7 @@ import {
   fetchSubsector,
   findMainWorld,
   isSubsectorInput,
+  mapWebpUrl,
   normalizeBodyPayload,
   parseStarSystemInput,
   parseSubsectorInput,
@@ -202,7 +203,7 @@ export class MtuImportDialog extends FormApplication {
       pages.push({
         name: game.i18n.localize("MTU.page.systemMap"),
         type: "image",
-        src: system.map_url,
+        src: mapWebpUrl(system.map_url),
         ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
         flags: { [MODULE_ID]: { systemMap: true } },
       });

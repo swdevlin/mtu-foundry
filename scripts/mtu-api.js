@@ -61,6 +61,15 @@ export async function fetchStarSystem(campaignSlug, resourceId) {
   return response.json();
 }
 
+/* ── System map URL ─────────────────────────────────────────── */
+
+export function mapWebpUrl(mapUrl) {
+  if (!mapUrl) return null;
+  const u = new URL(mapUrl);
+  if (!u.pathname.endsWith(".webp")) u.pathname += ".webp";
+  return u.toString();
+}
+
 /* ── Subsector URL / fetch ──────────────────────────────────── */
 
 export function isSubsectorInput(input) {

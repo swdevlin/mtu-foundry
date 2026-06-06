@@ -8,6 +8,7 @@ import {
   buildTransitData,
   fetchStarSystem,
   findMainWorld,
+  mapWebpUrl,
   normalizeBodyPayload,
 } from "./mtu-api.js";
 
@@ -511,7 +512,7 @@ async function updateMtuJournalPages(entry, system, { campaignSlug, resourceId, 
     if (systemMapPage && system.map_url) {
       updates.push({
         _id: systemMapPage.id,
-        src: system.map_url
+        src: mapWebpUrl(system.map_url)
       });
     }
   }

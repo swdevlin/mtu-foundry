@@ -1,0 +1,7 @@
+{
+  "allowedTools": [
+    "Bash(git push:*)",
+    "Bash(git tag:*)",
+    "Bash(gh release create:*)"
+  ]
+}
