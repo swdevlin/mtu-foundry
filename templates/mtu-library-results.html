@@ -1,0 +1,40 @@
+<div class="mtu-library-results">
+  <h2>{{localize "MTU.library.resultsFor" term=term}}</h2>
+
+  {{#unless groups.length}}
+  <p>{{localize "MTU.library.noResults"}}</p>
+  {{/unless}}
+
+  {{#each groups}}
+  <div class="mtu-library-group">
+    <h3>{{this.title}}{{#if this.edition}} ({{this.edition}}){{/if}}</h3>
+
+    {{#each this.hits}}
+    <div class="mtu-library-hit">
+      <p class="mtu-library-page">{{localize "MTU.library.page"}} {{this.printed_page_label}}</p>
+      <p class="mtu-library-excerpt">
+        {{#each this.excerpt_segments}}
+        {{#if this.highlighted}}<mark>{{this.text}}</mark>{{else}}{{this.text}}{{/if}}
+        {{/each}}
+      </p>
+    </div>
+    {{/each}}
+
+    {{#if this.low_relevance_hits.length}}
+    <details class="mtu-library-more">
+      <summary>{{localize "MTU.library.moreMatches" count=this.low_relevance_hits.length}}</summary>
+      {{#each this.low_relevance_hits}}
+      <div class="mtu-library-hit">
+        <p class="mtu-library-page">{{localize "MTU.library.page"}} {{this.printed_page_label}}</p>
+        <p class="mtu-library-excerpt">
+          {{#each this.excerpt_segments}}
+          {{#if this.highlighted}}<mark>{{this.text}}</mark>{{else}}{{this.text}}{{/if}}
+          {{/each}}
+        </p>
+      </div>
+      {{/each}}
+    </details>
+    {{/if}}
+  </div>
+  {{/each}}
+</div>

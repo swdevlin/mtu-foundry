@@ -6,6 +6,7 @@ import {
   buildPlayerData,
   buildSystemContext,
   buildTransitData,
+  fetchLibrarySearch,
   fetchStarSystem,
   findMainWorld,
   mapWebpUrl,
@@ -310,6 +311,43 @@ Hooks.on("renderJournalSheet", (app, html) => {
   }
 
   new ContextMenu(root, ".pages-list .page", getV13JournalSheetPageContextOptions(app));
+});
+
+/* -------------------------------- */
+/* Library search chat command      */
+/* -------------------------------- */
+
+async function runLibrarySearch(term) {
+  const campaignSlug = game.settings.get(MODULE_ID, "campaignSlug");
+
+  try {
+    const groups  = await fetchLibrarySearch(campaignSlug, term);
+    const content = await renderTemplate(`modules/${MODULE_ID}/templates/mtu-library-results.html`, { term, groups });
+
+    ChatMessage.create({
+      content,
+      whisper: [game.user.id],
+      speaker: ChatMessage.getSpeaker(),
+    });
+  } catch (err) {
+    console.error(err);
+    ui.notifications.error(game.i18n.format("MTU.notify.libraryFetchFailed", { message: err.message }));
+  }
+}
+
+Hooks.on("chatMessage", (chatLog, message) => {
+  if (!message.startsWith("/library")) return true;
+
+  const term = message.slice("/library".length).trim();
+  if (!term) {
+    ui.notifications.warn(game.i18n.localize("MTU.library.usage"));
+    return false;
+  }
+
+  if (!checkRequiredSettings()) return false;
+
+  runLibrarySearch(term);
+  return false;
 });
 
 /* -------------------------------- */

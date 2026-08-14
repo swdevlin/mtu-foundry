@@ -112,6 +112,24 @@ export async function fetchSubsector(campaignSlug, resourceId) {
   return response.json();
 }
 
+/* ── Library (rulebook) search URL / fetch ──────────────────── */
+
+export function buildLibrarySearchUrl(campaignSlug, term) {
+  const url = new URL(`https://mytravelleruniverse.net/c/${campaignSlug}/api/rulebooks/search`);
+  url.searchParams.set("q", term);
+  return url.toString();
+}
+
+export async function fetchLibrarySearch(campaignSlug, term) {
+  const url = buildLibrarySearchUrl(campaignSlug, term);
+  const response = await fetch(url, {
+    headers: buildHeaders({ includeAuth: true }),
+    credentials: "omit",
+  });
+  if (!response.ok) throw new Error(game.i18n.format("MTU.error.fetchHttpError", { status: response.status, id: term }));
+  return response.json();
+}
+
 /* ── System context & normalization ────────────────────────── */
 
 export function buildSystemContext(system) {

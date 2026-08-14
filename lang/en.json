@@ -25,6 +25,13 @@
       "refreshFromMtu": "Refresh from MTU",
       "openImporter": "Open MTU importer"
     },
+    "library": {
+      "usage": "Usage: /library <search term>",
+      "resultsFor": "Library results for \"{term}\"",
+      "noResults": "No matches found.",
+      "moreMatches": "{count} more possible matches",
+      "page": "Page"
+    },
     "warn": {
       "configRequired": {
         "title": "MTU — Configuration Required",
@@ -45,7 +52,8 @@
       "subsectorImporting": "Importing {count} star systems from subsector…",
       "subsectorDone": "Imported {count} star systems.",
       "subsectorEmpty": "No star systems found in this subsector.",
-      "systemImportFailed": "Failed to import system {id}: {message}"
+      "systemImportFailed": "Failed to import system {id}: {message}",
+      "libraryFetchFailed": "MTU library search failed: {message}"
     },
     "importDialog": {
       "title": "Import MTU Star System",

@@ -66,3 +66,34 @@
 .mtu-transit-table thead th:first-child {
   background: transparent;
 }
+
+/* ── Library search results ─────────────────────────────────── */
+
+.mtu-library-group {
+  margin-bottom: 0.75rem;
+}
+
+.mtu-library-hit {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.mtu-library-page {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-light-secondary);
+}
+
+.mtu-library-excerpt {
+  margin: 0.1rem 0 0;
+}
+
+.mtu-library-excerpt mark {
+  background: var(--color-warm-2, #ffdf7e);
+  color: inherit;
+}
+
+.mtu-library-more summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-light-secondary);
+}
