@@ -73,6 +73,11 @@
   margin-bottom: 0.75rem;
 }
 
+.mtu-library-group > summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
 .mtu-library-hit {
   margin: 0.25rem 0 0.5rem;
 }
