@@ -321,7 +321,7 @@ async function runLibrarySearch(term) {
   const campaignSlug = game.settings.get(MODULE_ID, "campaignSlug");
 
   try {
-    const groups  = await fetchLibrarySearch(campaignSlug, term);
+    const groups  = await fetchLibrarySearch(campaignSlug, term, game.user.isGM);
     const content = await renderTemplate(`modules/${MODULE_ID}/templates/mtu-library-results.html`, { term, groups });
 
     ChatMessage.create({

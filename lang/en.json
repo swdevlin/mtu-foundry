@@ -3,7 +3,7 @@
     "settings": {
       "apiKey": {
         "name": "MTU API key",
-        "hint": "Bearer token used to authenticate requests to the MTU API. Set once by the GM; used by all players."
+        "hint": "Bearer token used to authenticate requests to the MTU API. Set by the GM; used only for the GM's own requests, including /library searches run by the GM."
       },
       "defaultFolderName": {
         "name": "Default journal folder",

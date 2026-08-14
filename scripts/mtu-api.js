@@ -120,10 +120,10 @@ export function buildLibrarySearchUrl(campaignSlug, term) {
   return url.toString();
 }
 
-export async function fetchLibrarySearch(campaignSlug, term) {
+export async function fetchLibrarySearch(campaignSlug, term, includeAuth) {
   const url = buildLibrarySearchUrl(campaignSlug, term);
   const response = await fetch(url, {
-    headers: buildHeaders({ includeAuth: true }),
+    headers: buildHeaders({ includeAuth }),
     credentials: "omit",
   });
   if (!response.ok) throw new Error(game.i18n.format("MTU.error.fetchHttpError", { status: response.status, id: term }));
