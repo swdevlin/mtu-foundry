@@ -6,8 +6,8 @@
   {{/unless}}
 
   {{#each groups}}
-  <div class="mtu-library-group">
-    <h3>{{this.title}}{{#if this.edition}} ({{this.edition}}){{/if}}</h3>
+  <details class="mtu-library-group">
+    <summary>{{this.title}}{{#if this.edition}} ({{this.edition}}){{/if}}</summary>
 
     {{#each this.hits}}
     <div class="mtu-library-hit">
@@ -35,6 +35,6 @@
       {{/each}}
     </details>
     {{/if}}
-  </div>
+  </details>
   {{/each}}
 </div>
