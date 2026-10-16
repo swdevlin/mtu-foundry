@@ -87,6 +87,10 @@
           "label": "Main World — GM page",
           "notes": "Full main world detail: orbital, starport, economics, population, government, law, and tech level. GM-only."
         },
+        "worldMapPage": {
+          "label": "Main World — Map",
+          "notes": "Planet map image for the main world, if available. Visible to all players."
+        },
         "systemMapPage": {
           "label": "System Map",
           "notes": "SVG map of the star system. Visible to all players."
@@ -102,6 +106,7 @@
       "overview":        "Overview",
       "mainWorldPlayer": "Main World",
       "mainWorldGm":     "Main World — GM",
+      "mainWorldMap":    "Main World Map",
       "systemMap":       "System Map",
       "transit":         "Transit Times",
       "defaultName":     "Star System {id}"

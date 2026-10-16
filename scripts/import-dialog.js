@@ -38,6 +38,7 @@ export class MtuImportDialog extends FormApplication {
       createOverviewPage:  true,
       createPlayerPage:    true,
       createGmPage:        true,
+      createWorldMapPage:  true,
       createSystemMapPage: true,
       createTransitPage:   true,
     };
@@ -56,6 +57,7 @@ export class MtuImportDialog extends FormApplication {
       createOverviewPage:  data.createOverviewPage,
       createPlayerPage:    data.createPlayerPage,
       createGmPage:        data.createGmPage,
+      createWorldMapPage:  data.createWorldMapPage,
       createSystemMapPage: data.createSystemMapPage,
       createTransitPage:   data.createTransitPage,
     };
@@ -195,6 +197,16 @@ export class MtuImportDialog extends FormApplication {
           text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
           ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
           flags: { [MODULE_ID]: { live: true, mode: "gm", resourceId, campaignSlug } },
+        });
+      }
+
+      if (pageOptions.createWorldMapPage && mainWorldBody.map_url) {
+        pages.push({
+          name: game.i18n.localize("MTU.page.mainWorldMap"),
+          type: "image",
+          src: mainWorldBody.map_url,
+          ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+          flags: { [MODULE_ID]: { worldMap: true } },
         });
       }
     }
