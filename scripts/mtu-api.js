@@ -188,6 +188,7 @@ export function normalizeBodyPayload(body, systemContext) {
     // Top-level fields still present; also pull from nested population.biological_data if available
     native_sophont:       body.native_sophont ?? body.population?.native_sophont?.value ?? false,
     extinct_sophont:      body.extinct_sophont ?? body.population?.extinct_sophont?.value ?? false,
+    sophont_name:         body.sophont?.name ?? null,
     habitability_rating:  body.habitability_rating ?? null,
     biomass_rating:       body.biomass_rating ?? body.population?.biological_data?.biomass_rating?.value ?? null,
     biodiversity_rating:  body.biodiversity_rating ?? body.population?.biological_data?.biodiversity_rating?.code ?? null,
@@ -477,7 +478,9 @@ export function buildPlayerData(payload) {
       { label: "MTU.label.government",    value: govCode != null ? `${govCode} — ${gov}` : "—" },
       { label: "MTU.label.lawLevel",      value: lawCode != null ? `${lawCode} — ${law}` : "—" },
       { label: "MTU.label.techLevel",     value: tl.code != null ? `${tl.code} — ${tl.descriptor ?? "—"}` : "—" },
-      { label: "MTU.label.nativeSophont", value: payload.native_sophont ? yes() : none() },
+      { label: "MTU.label.nativeSophont", value: payload.native_sophont
+          ? (payload.sophont_name ? `${yes()} — ${payload.sophont_name}` : yes())
+          : none() },
     ],
     jumpShadow: buildJumpShadowTimes(payload),
     location: {
@@ -625,7 +628,9 @@ export function buildGmData(payload, campaignSlug) {
         { label: "MTU.label.urbanisation",        value: urbanPct != null ? `${urbanPct}%` : "—" },
         { label: "MTU.label.majorCities",         value: majorCities ?? "—" },
         { label: "MTU.label.majorCityPopulation", value: majorCityPop != null ? Number(majorCityPop).toLocaleString() : "—" },
-        { label: "MTU.label.nativeSophont",       value: nativeSoph ? yes() : no() },
+        { label: "MTU.label.nativeSophont",       value: nativeSoph
+            ? (payload.sophont_name ? `${yes()} — ${payload.sophont_name}` : yes())
+            : no() },
         { label: "MTU.label.extinctSophont",      value: extinctSoph ? yes() : no() },
         { label: "MTU.label.diversity",           value: fmtDm(p.diversity) },
         { label: "MTU.label.xenophilia",          value: fmtDm(p.xenophilia) },
