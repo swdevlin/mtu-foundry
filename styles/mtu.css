@@ -28,6 +28,11 @@
   gap: 0.5rem;
 }
 
+.mtu-import-form .checkbox input[type="checkbox"] {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .mtu-import-form .form-group.stacked .notes {
   margin: 0;
   font-size: 0.75rem;
