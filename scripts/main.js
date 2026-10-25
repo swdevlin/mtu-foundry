@@ -452,6 +452,23 @@ async function renderMtuContent(mode, system, campaignSlug) {
       return renderTemplate(`modules/${MODULE_ID}/templates/mtu-transit.html`, buildTransitData(system, mDrive));
     }
 
+    case "systemSurvey":
+      return system.survey_records_html ?? "";
+
+    case "systemClassified":
+      return system.classified_records_html ?? "";
+
+    case "worldSurvey":
+    case "worldClassified": {
+      const mainWorld = findMainWorld(system);
+      if (!mainWorld) {
+        return `<p>${game.i18n.localize("MTU.notify.noMainWorld")}</p>`;
+      }
+      return mode === "worldSurvey"
+        ? (mainWorld.survey_records_html ?? "")
+        : (mainWorld.classified_records_html ?? "");
+    }
+
     default: {
       const mainWorld = findMainWorld(system);
       if (!mainWorld) {
@@ -522,7 +539,10 @@ async function refreshMtuJournalEntry(entry) {
 async function updateMtuJournalPages(entry, system, { campaignSlug, resourceId, updateSystemMap }) {
   const updates = [];
 
-  for (const mode of ["overview", "player", "gm", "transit"]) {
+  for (const mode of [
+    "overview", "player", "gm", "transit",
+    "systemSurvey", "systemClassified", "worldSurvey", "worldClassified",
+  ]) {
     const page = findMtuTextPage(entry, mode);
     if (!page) continue;
 

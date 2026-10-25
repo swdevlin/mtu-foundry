@@ -98,18 +98,38 @@
         "transitPage": {
           "label": "Transit times",
           "notes": "M-drive travel-time matrix between all bodies at the selected drive rating. Visible to all players."
+        },
+        "systemSurveyPage": {
+          "label": "System Survey Records",
+          "notes": "Survey records for the star system. Visible to all players."
+        },
+        "systemClassifiedPage": {
+          "label": "System Classified Records",
+          "notes": "Classified referee-facing records for the star system. GM-only."
+        },
+        "worldSurveyPage": {
+          "label": "Main World — Survey Records",
+          "notes": "Survey records for the main world. Visible to all players."
+        },
+        "worldClassifiedPage": {
+          "label": "Main World — Classified Records",
+          "notes": "Classified referee-facing records for the main world. GM-only."
         }
       },
       "submit": "Create Journal"
     },
     "page": {
-      "overview":        "Overview",
-      "mainWorldPlayer": "Main World",
-      "mainWorldGm":     "Main World — GM",
-      "mainWorldMap":    "Main World Map",
-      "systemMap":       "System Map",
-      "transit":         "Transit Times",
-      "defaultName":     "Star System {id}"
+      "overview":          "Overview",
+      "mainWorldPlayer":   "Main World",
+      "mainWorldGm":       "Main World — GM",
+      "mainWorldMap":      "Main World Map",
+      "systemMap":         "System Map",
+      "transit":           "Transit Times",
+      "systemSurvey":      "System Survey Records",
+      "systemClassified":  "System Classified Records",
+      "worldSurvey":       "Main World — Survey Records",
+      "worldClassified":   "Main World — Classified Records",
+      "defaultName":       "Star System {id}"
     },
     "error": {
       "needCampaignSlug": "Enter a full URL or set the campaign slug in module settings.",

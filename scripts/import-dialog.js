@@ -35,12 +35,16 @@ export class MtuImportDialog extends FormApplication {
     return {
       defaultFolderName:   game.settings.get(MODULE_ID, "defaultFolderName"),
       mDrive:              game.settings.get(MODULE_ID, "mDrive"),
-      createOverviewPage:  true,
-      createPlayerPage:    true,
-      createGmPage:        true,
-      createWorldMapPage:  true,
-      createSystemMapPage: true,
-      createTransitPage:   true,
+      createOverviewPage:          true,
+      createSystemSurveyPage:      true,
+      createSystemClassifiedPage:  true,
+      createPlayerPage:            true,
+      createGmPage:                true,
+      createWorldSurveyPage:       true,
+      createWorldClassifiedPage:   true,
+      createWorldMapPage:          true,
+      createSystemMapPage:         true,
+      createTransitPage:           true,
     };
   }
 
@@ -54,12 +58,16 @@ export class MtuImportDialog extends FormApplication {
     const defaultSlug = game.settings.get(MODULE_ID, "campaignSlug");
     const mDrive = Math.min(10, Math.max(1, parseInt(data.mDrive, 10) || 1));
     const pageOptions = {
-      createOverviewPage:  data.createOverviewPage,
-      createPlayerPage:    data.createPlayerPage,
-      createGmPage:        data.createGmPage,
-      createWorldMapPage:  data.createWorldMapPage,
-      createSystemMapPage: data.createSystemMapPage,
-      createTransitPage:   data.createTransitPage,
+      createOverviewPage:          data.createOverviewPage,
+      createSystemSurveyPage:      data.createSystemSurveyPage,
+      createSystemClassifiedPage:  data.createSystemClassifiedPage,
+      createPlayerPage:            data.createPlayerPage,
+      createGmPage:                data.createGmPage,
+      createWorldSurveyPage:       data.createWorldSurveyPage,
+      createWorldClassifiedPage:   data.createWorldClassifiedPage,
+      createWorldMapPage:          data.createWorldMapPage,
+      createSystemMapPage:         data.createSystemMapPage,
+      createTransitPage:           data.createTransitPage,
     };
 
     await game.settings.set(MODULE_ID, "mDrive", mDrive);
@@ -167,6 +175,26 @@ export class MtuImportDialog extends FormApplication {
       });
     }
 
+    if (pageOptions.createSystemSurveyPage && system.survey_records_html) {
+      pages.push({
+        name: game.i18n.localize("MTU.page.systemSurvey"),
+        type: "text",
+        text: { content: system.survey_records_html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
+        ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+        flags: { [MODULE_ID]: { live: true, mode: "systemSurvey", resourceId, campaignSlug } },
+      });
+    }
+
+    if (pageOptions.createSystemClassifiedPage && system.classified_records_html) {
+      pages.push({
+        name: game.i18n.localize("MTU.page.systemClassified"),
+        type: "text",
+        text: { content: system.classified_records_html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
+        ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
+        flags: { [MODULE_ID]: { live: true, mode: "systemClassified", resourceId, campaignSlug } },
+      });
+    }
+
     if (mainWorldBody) {
       const mainWorldCtx = { ...ctx, orbiting_name: mainWorldBody.orbiting_name || buildStarLabel(system.primary_star) };
       const bodyWithName = mainWorldBody.name ? mainWorldBody : { ...mainWorldBody, name: system.main_world?.name ?? null };
@@ -197,6 +225,26 @@ export class MtuImportDialog extends FormApplication {
           text: { content: html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
           ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
           flags: { [MODULE_ID]: { live: true, mode: "gm", resourceId, campaignSlug } },
+        });
+      }
+
+      if (pageOptions.createWorldSurveyPage && mainWorldBody.survey_records_html) {
+        pages.push({
+          name: game.i18n.localize("MTU.page.worldSurvey"),
+          type: "text",
+          text: { content: mainWorldBody.survey_records_html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
+          ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER },
+          flags: { [MODULE_ID]: { live: true, mode: "worldSurvey", resourceId, campaignSlug } },
+        });
+      }
+
+      if (pageOptions.createWorldClassifiedPage && mainWorldBody.classified_records_html) {
+        pages.push({
+          name: game.i18n.localize("MTU.page.worldClassified"),
+          type: "text",
+          text: { content: mainWorldBody.classified_records_html, format: CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML },
+          ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
+          flags: { [MODULE_ID]: { live: true, mode: "worldClassified", resourceId, campaignSlug } },
         });
       }
 
