@@ -129,14 +129,6 @@ export class MtuImportDialog extends FormApplication {
         return;
       }
 
-      console.log("MTU | raw system payload", system);
-      console.log("MTU | classified/survey fields", {
-        systemSurvey:     system.survey_records_html,
-        systemClassified: system.classified_records_html,
-        worldSurvey:      findMainWorld(system)?.survey_records_html,
-        worldClassified:  findMainWorld(system)?.classified_records_html,
-      });
-
       const entry = await this.createSystemJournal(
         system, parsed.campaignSlug, parsed.resourceId, mDrive, folder, pageOptions,
         data.name?.trim() || null
