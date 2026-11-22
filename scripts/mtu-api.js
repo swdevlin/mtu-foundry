@@ -166,7 +166,8 @@ export function normalizeBodyPayload(body, systemContext) {
     law_level:     body.law_level ?? {},
     hydrographics: body.hydrographics ?? {},
     starport:      body.starport ?? {},
-    tech_level:    body.tech_level ?? {},
+    starport_capacity: body.starport_capacity ?? null,
+    tech_level:   body.tech_level ?? {},
 
     gravity:       body.gravity ?? 0,
     temperature:   body.temperature ?? 273.15,
@@ -436,6 +437,23 @@ function govCodeEntry(val, lookup) {
   return `${val.code} — ${val.description ?? lookup[val.code] ?? "—"}`;
 }
 
+// Returns null when the main world has no starport capacity data.
+function buildStarportCapacity(cap) {
+  if (!cap || typeof cap !== "object") return null;
+  const num = (n, decimals = 0) => n != null
+    ? Number(n).toLocaleString(undefined, { maximumFractionDigits: decimals })
+    : "—";
+  const rows = [
+    { label: "MTU.label.downportCapacity", value: num(cap.downport) },
+    { label: "MTU.label.highportCapacity", value: cap.has_highport ? num(cap.highport) : none() },
+    { label: "MTU.label.shipyardCapability", value: cap.shipyard_capability ? snakeToTitle(cap.shipyard_capability) : none() },
+    { label: "MTU.label.internalBayCapacity", value: num(cap.internal_bay_capacity) },
+    { label: "MTU.label.annualShipyardOutput", value: num(cap.annual_shipyard_output) },
+    { label: "MTU.label.shipyardBuildCapacity", value: num(cap.shipyard_build_capacity) },
+  ];
+  return rows;
+}
+
 function tlEntry(sub) {
   if (!sub?.code) return "—";
   return sub.description != null ? `${sub.code} — ${sub.description}` : String(sub.code);
@@ -483,6 +501,7 @@ export function buildPlayerData(payload) {
           : none() },
     ],
     jumpShadow: buildJumpShadowTimes(payload),
+    starportCapacity: buildStarportCapacity(payload.starport_capacity),
     location: {
       orbiting:   payload.orbiting_name ?? "—",
       starSystem: payload.star_system_name ?? "—",

@@ -89,6 +89,20 @@
     </tbody>
   </table>
 
+  {{#if starportCapacity}}
+  <h2>{{localize "MTU.section.starportCapacity"}}</h2>
+  <table class="mtu-no-borders">
+    <tbody>
+      {{#each starportCapacity}}
+      <tr>
+        <th class="mtu-left">{{localize this.label}}</th>
+        <td>{{this.value}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  {{/if}}
+
   <h2>{{localize "MTU.section.economics"}}</h2>
   <table class="mtu-no-borders">
     <tbody>
